@@ -1,3 +1,6 @@
+/*
+ * Day 01: Simple VecAdd Kernel
+ */
 #include <stdio.h>
 #include <stdlib.h>
 
