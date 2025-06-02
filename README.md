@@ -7,6 +7,10 @@
 
 Wrote a simple vector addition kernel.
 
+### Day 02
+
+Wrote a simple matmul kernel. Only tested it with a simple 256x256 square matrix.
+
 ## Notes
 
 ## Compiling directly to ptx
