@@ -1,7 +1,12 @@
 # 100-days-of-cuda
-100 days of cuda challenge
+
+100 days of cuda challenge.
 
 ## Summary
+
+This is a [challenge](https://github.com/hkproj/100-days-of-gpu/blob/main/CUDA.md) for writing a CUDA Kernel everyday for 100 days.
+
+## Log
 
 ### Day 01
 
