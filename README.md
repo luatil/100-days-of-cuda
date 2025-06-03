@@ -16,6 +16,16 @@ Wrote a simple vector addition kernel.
 
 Wrote a simple matmul kernel. Only tested it with a simple 256x256 square matrix.
 
+### Day 03
+
+Wrote a color inversion kernel. Implemented simple CLI program that
+reads input and output filenames and inverts the input image to the
+output image.
+
+Based on LeetGPU Color Inversion challenge.
+
+Uses `stb_image.h` and `stb_image_write.h` for image reading and writing.
+
 ## Notes
 
 ## Compiling directly to ptx
