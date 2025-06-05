@@ -42,6 +42,14 @@ Uses `stb_image.h` and `stb_image_write.h` for image reading and writing.
 Major difference from the book is handling RGBA images versus RGA ones
 in the Kernel.
 
+#### Day 05
+
+Wrote a image blur image converter based on example in PMPP.
+
+Uses a simple average of surrounding pixels.
+
+Only handles 1 channel images.
+
 ### Notes
 
 ### Compiling directly to ptx
