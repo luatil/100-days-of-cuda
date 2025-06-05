@@ -26,6 +26,22 @@ Based on LeetGPU Color Inversion challenge.
 
 Uses `stb_image.h` and `stb_image_write.h` for image reading and writing.
 
+#### Day 04
+
+Wrote a grayscale image converter based on example in PMPP. Implemented
+a simple CLI that reads input and output filenames and writes the
+grayscale image.
+
+Uses the following formula for calculating grayscale values:
+
+`L = 0.21*r + 0.72*g + 0.07b`
+
+
+Uses `stb_image.h` and `stb_image_write.h` for image reading and writing.
+
+Major difference from the book is handling RGBA images versus RGA ones
+in the Kernel.
+
 ## Notes
 
 ## Compiling directly to ptx
