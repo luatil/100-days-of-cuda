@@ -50,6 +50,11 @@ Uses a simple average of surrounding pixels.
 
 Only handles 1 channel images.
 
+#### Day 06
+
+Wrote a simple reverse array kernel. Goal was to understand
+better how the `__syncthreads` directive works.
+
 ### Notes
 
 ### Compiling directly to ptx
