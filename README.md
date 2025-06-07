@@ -55,6 +55,11 @@ Only handles 1 channel images.
 Wrote a simple reverse array kernel. Goal was to understand
 better how the `__syncthreads` directive works.
 
+#### Day 07
+
+Wrote a Tiled MatMul Kernel.  Finished chapter 4 and started chapter 5
+from PMPP.  Wrote a simple program to query cuda device properties.
+
 ### Notes
 
 ### Compiling directly to ptx
