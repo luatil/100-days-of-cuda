@@ -80,4 +80,4 @@ nvdisasm -g -c your_file.cubin > your_file.sass
 
 - https://developer.nvidia.com/blog/understanding-ptx-the-assembly-language-of-cuda-gpu-computing/
 - https://kaixih.github.io/nvcc-options/
-
+- [Cuda Occupancy Calculator](https://xmartlabs.github.io/cuda-calculator/)
