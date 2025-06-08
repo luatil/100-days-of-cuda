@@ -1,5 +1,5 @@
 /*
- * Day 08: Random Matrix Generation
+ * Day 008: Generate Random Matrix CLI
  */
 #include <cuda_runtime.h>
 #include <curand.h>
@@ -15,38 +15,9 @@ typedef uint64_t u64;
 
 typedef int32_t s32;
 
+#include "day_008_generate_random_matrix.cu"
+
 #define AllocateCPU(_Type, _NumberOfElements) ((_Type *)malloc(sizeof(_Type) * (_NumberOfElements)))
-
-#ifndef DEBUG_ENABLED
-#define DEBUG_ENABLED 1
-#endif
-
-#if DEBUG_ENABLED
-#define DbgU32(_Val) printf(#_Val "=%d\n", (_Val))
-#define DbgS32(_Val) printf(#_Val "=%d\n", (_Val))
-#define DbgF32(_Val) printf(#_Val "=%f\n", (_Val))
-#else
-#define DbgU32(_Val)
-#define DbgS32(_Val)
-#define DbgF32(_Val)
-#endif
-
-#ifndef TILE_WIDTH
-#define TILE_WIDTH 16
-#endif
-
-__global__ void GenerateRandomMatrix(f32 *OutputMatrix, u32 Width, u32 Height, u64 Seed)
-{
-    int Tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int TotalElements = Width * Height;
-
-    if (Tid < TotalElements)
-    {
-        curandState State;
-        curand_init(Seed, Tid, 0, &State);
-        OutputMatrix[Tid] = curand_uniform(&State); // Uniform [0,1]
-    }
-}
 
 int main()
 {
