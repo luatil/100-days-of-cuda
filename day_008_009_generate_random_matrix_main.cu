@@ -55,25 +55,25 @@ int main()
     u32 SizeInBytes = sizeof(f32) * N * M;
     u64 Seed = 2345;
 
-    f32 *HostMatrix= AllocateCPU(f32, N * M);
+    f32 *HostMatrix = AllocateCPU(f32, N * M);
 
     f32 *DeviceMatrix;
     cudaMalloc(&DeviceMatrix, SizeInBytes);
 
     dim3 ThreadsPerBlock(32);
-    dim3 BlocksPerGrid((N*M + 32 - 1) / 32);
+    dim3 BlocksPerGrid((N * M + 32 - 1) / 32);
 
     GenerateRandomMatrix<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceMatrix, N, M, Seed);
 
     cudaMemcpy(HostMatrix, DeviceMatrix, SizeInBytes, cudaMemcpyDeviceToHost);
 
     fprintf(stdout, "%d %d\n", N, M);
-    for (u32 I = 0; I < N; I++) 
+    for (u32 I = 0; I < N; I++)
     {
-	for (u32 J = 0; J < M; J++)
-	{
-	    fprintf(stdout, "%.6f ", HostMatrix[I*N+J]);
-	}
-	fprintf(stdout, "\n");
+        for (u32 J = 0; J < M; J++)
+        {
+            fprintf(stdout, "%.6f ", HostMatrix[I * N + J]);
+        }
+        fprintf(stdout, "\n");
     }
 }
