@@ -60,6 +60,11 @@ better how the `__syncthreads` directive works.
 Wrote a Tiled MatMul Kernel.  Finished chapter 4 and started chapter 5
 from PMPP.  Wrote a simple program to query cuda device properties.
 
+#### Day 08
+
+Wrote a Random Matrix Generator using the cuRand library.
+Values generated follow an uniform distribution over [0, 1].
+
 ### Notes
 
 ### Compiling directly to ptx
