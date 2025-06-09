@@ -33,16 +33,16 @@ __global__ void TiledMatmulKernel(f32 *InputA, f32 *InputB, f32 *Output, u32 Hei
     {
 
         u32 IndexA = Row * WidthA + I * TILE_WIDTH + Tx;
-        u32 IndexB = Col + Ty * WidthB + I * TILE_WIDTH * WidthB;
+        u32 IndexB = (I * TILE_WIDTH + Ty) * WidthB + Col;
 
-        TileA[Tx][Ty] = (IndexA < (HeightA * WidthA)) ? InputA[IndexA] : 0.0f;
-        TileB[Tx][Ty] = (IndexB < (WidthA * WidthB)) ? InputB[IndexB] : 0.0f;
+        TileA[Ty][Tx] = (Row < HeightA && I * TILE_WIDTH + Tx < WidthA) ? InputA[IndexA] : 0.0f;
+        TileB[Ty][Tx] = (I * TILE_WIDTH + Ty < WidthA && Col < WidthB) ? InputB[IndexB] : 0.0f;
 
         __syncthreads();
 
         for (u32 K = 0; K < TILE_WIDTH; K++)
         {
-            DotProduct += TileA[Tx][K] * TileB[K][Ty];
+            DotProduct += TileA[Ty][K] * TileB[K][Tx];
         }
 
         __syncthreads();
