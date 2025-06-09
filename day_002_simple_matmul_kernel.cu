@@ -17,7 +17,7 @@ __global__ void MatMulKernel(f32 *InputA, f32 *InputB, f32 *Output, u32 HeightA,
     {
         for (u32 K = 0; K < WidthA; K++)
         {
-            Output[Row * WidthB + Col] += InputA[Row * WidthA + K] * InputB[K * WidthB + Row];
+            Output[Row * WidthB + Col] += InputA[Row * WidthA + K] * InputB[K * WidthB + Col];
         }
     }
 }
