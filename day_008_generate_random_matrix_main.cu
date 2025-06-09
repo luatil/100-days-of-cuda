@@ -15,36 +15,49 @@ typedef uint64_t u64;
 
 typedef int32_t s32;
 
+#include "day_001_macros.h"
 #include "day_008_generate_random_matrix.cu"
 
-#define AllocateCPU(_Type, _NumberOfElements) ((_Type *)malloc(sizeof(_Type) * (_NumberOfElements)))
-
-int main()
+int main(int ArgumentCount, char *Arguments[])
 {
-    u32 N = 10;
-    u32 M = 10;
-    u32 SizeInBytes = sizeof(f32) * N * M;
-    u64 Seed = 2345;
-
-    f32 *HostMatrix = AllocateCPU(f32, N * M);
-
-    f32 *DeviceMatrix;
-    cudaMalloc(&DeviceMatrix, SizeInBytes);
-
-    dim3 ThreadsPerBlock(32);
-    dim3 BlocksPerGrid((N * M + 32 - 1) / 32);
-
-    GenerateRandomMatrix<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceMatrix, N, M, Seed);
-
-    cudaMemcpy(HostMatrix, DeviceMatrix, SizeInBytes, cudaMemcpyDeviceToHost);
-
-    fprintf(stdout, "%d %d\n", N, M);
-    for (u32 I = 0; I < N; I++)
+    if (ArgumentCount == 4)
     {
-        for (u32 J = 0; J < M; J++)
+        u32 Width, Height;
+        u64 Seed;
+
+        sscanf(Arguments[1], "%ld", &Seed);
+        sscanf(Arguments[2], "%d", &Height);
+        sscanf(Arguments[3], "%d", &Width);
+
+        u32 SizeInBytes = sizeof(f32) * Width * Height;
+
+        f32 *HostMatrix = AllocateCPU(f32, Width * Height);
+
+        f32 *DeviceMatrix;
+        cudaMalloc(&DeviceMatrix, SizeInBytes);
+
+        dim3 ThreadsPerBlock(32);
+        dim3 BlocksPerGrid((Width * Height + 32 - 1) / 32);
+
+        GenerateRandomMatrix<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceMatrix, Width, Height, Seed);
+
+        cudaMemcpy(HostMatrix, DeviceMatrix, SizeInBytes, cudaMemcpyDeviceToHost);
+
+        fprintf(stdout, "%d %d\n", Height, Width);
+        for (u32 I = 0; I < Height; I++)
         {
-            fprintf(stdout, "%.6f ", HostMatrix[I * N + J]);
+            for (u32 J = 0; J < Width; J++)
+            {
+                fprintf(stdout, "%.6f ", HostMatrix[I * Width + J]);
+            }
+            fprintf(stdout, "\n");
         }
-        fprintf(stdout, "\n");
+    }
+    else
+    {
+        fprintf(stderr, "Usage: %s [seed] [height] [width]\n", Arguments[0]);
+        fprintf(stderr, "   seed: Seed to generate the Matrix\n");
+        fprintf(stderr, " height: Matrix height (positive integer)\n");
+        fprintf(stderr, "  width: Matrix width (positive integer)\n");
     }
 }
