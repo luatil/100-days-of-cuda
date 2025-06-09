@@ -65,92 +65,120 @@ int main(int ArgumentCount, char *Arguments[])
         if (strcmp(Algorithm, "simple") == 0 || strcmp(Algorithm, "tiled") == 0)
         {
             u32 MatrixCount;
-            if (scanf("%d", &MatrixCount) == 1 && MatrixCount == 2)
+            if (scanf("%d", &MatrixCount) == 1 && MatrixCount >= 2)
             {
-                u32 HeightA, WidthA, HeightB, WidthB;
-                f32 *HostA = ReadMatrix(&HeightA, &WidthA);
-                f32 *HostB = ReadMatrix(&HeightB, &WidthB);
+                f32 **Matrices = AllocateCPU(f32 *, MatrixCount);
+                u32 *Heights = AllocateCPU(u32, MatrixCount);
+                u32 *Widths = AllocateCPU(u32, MatrixCount);
 
-                if (HostA && HostB)
+                u32 I;
+                for (I = 0; I < MatrixCount; I++)
                 {
-                    if (WidthA == HeightB)
+                    Matrices[I] = ReadMatrix(&Heights[I], &Widths[I]);
+                    if (!Matrices[I])
                     {
-                        u32 HeightC = HeightA;
-                        u32 WidthC = WidthB;
-                        f32 *HostC = AllocateCPU(f32, HeightC * WidthC);
-
-                        u32 SizeA = sizeof(f32) * HeightA * WidthA;
-                        u32 SizeB = sizeof(f32) * HeightB * WidthB;
-                        u32 SizeC = sizeof(f32) * HeightC * WidthC;
-
-                        f32 *DeviceA, *DeviceB, *DeviceC;
-                        cudaMalloc(&DeviceA, SizeA);
-                        cudaMalloc(&DeviceB, SizeB);
-                        cudaMalloc(&DeviceC, SizeC);
-
-                        cudaMemcpy(DeviceA, HostA, SizeA, cudaMemcpyHostToDevice);
-                        cudaMemcpy(DeviceB, HostB, SizeB, cudaMemcpyHostToDevice);
-                        cudaMemset(DeviceC, 0, SizeC);
-
-                        if (strcmp(Algorithm, "simple") == 0)
-                        {
-                            dim3 ThreadsPerBlock(16, 16);
-                            dim3 BlocksPerGrid((WidthC + 15) / 16, (HeightC + 15) / 16);
-                            MatMulKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceA, DeviceB, DeviceC, HeightA, WidthA,
-                                                                             WidthB);
-                        }
-                        else
-                        {
-                            dim3 ThreadsPerBlock(TILE_WIDTH, TILE_WIDTH);
-                            dim3 BlocksPerGrid((WidthC + TILE_WIDTH - 1) / TILE_WIDTH,
-                                               (HeightC + TILE_WIDTH - 1) / TILE_WIDTH);
-                            TiledMatmulKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceA, DeviceB, DeviceC, HeightA,
-                                                                                  WidthA, WidthB);
-                        }
-
-                        cudaMemcpy(HostC, DeviceC, SizeC, cudaMemcpyDeviceToHost);
-
-                        fprintf(stdout, "1\n");
-                        PrintMatrix(HostC, HeightC, WidthC);
-
-                        free(HostC);
-                        cudaFree(DeviceA);
-                        cudaFree(DeviceB);
-                        cudaFree(DeviceC);
-                    }
-                    else
-                    {
-                        fprintf(stderr, "Error: Matrix dimensions incompatible for multiplication (%dx%d) * (%dx%d)\n",
-                                HeightA, WidthA, HeightB, WidthB);
-                        ExitCode = 1;
-                    }
-
-                    if (HostA)
-                    {
-                        free(HostA);
-                    }
-                    if (HostB)
-                    {
-                        free(HostB);
+                        break;
                     }
                 }
-                else
+
+                if (I == MatrixCount)
                 {
-                    fprintf(stderr, "Error: Failed to read matrices\n");
-                    if (HostA)
+                    u32 J;
+                    for (J = 0; J < MatrixCount - 1; J++)
                     {
-                        free(HostA);
+                        if (Widths[J] != Heights[J + 1])
+                        {
+                            fprintf(stderr, "Error: Matrix dimensions incompatible at position %d: (%dx%d) * (%dx%d)\n",
+                                    J, Heights[J], Widths[J], Heights[J + 1], Widths[J + 1]);
+                            ExitCode = 1;
+                            break;
+                        }
                     }
-                    if (HostB)
+
+                    if (J == MatrixCount - 1)
                     {
-                        free(HostB);
+                        u32 CurrentHeight = Heights[0];
+                        u32 CurrentWidth = Widths[0];
+                        f32 *CurrentResult = AllocateCPU(f32, CurrentHeight * CurrentWidth);
+                        memcpy(CurrentResult, Matrices[0], sizeof(f32) * CurrentHeight * CurrentWidth);
+
+                        for (u32 K = 1; K < MatrixCount; K++)
+                        {
+                            u32 NextHeight = Heights[K];
+                            u32 NextWidth = Widths[K];
+                            u32 ResultHeight = CurrentHeight;
+                            u32 ResultWidth = NextWidth;
+
+                            f32 *NewResult = AllocateCPU(f32, ResultHeight * ResultWidth);
+
+                            u32 SizeA = sizeof(f32) * CurrentHeight * CurrentWidth;
+                            u32 SizeB = sizeof(f32) * NextHeight * NextWidth;
+                            u32 SizeC = sizeof(f32) * ResultHeight * ResultWidth;
+
+                            f32 *DeviceA, *DeviceB, *DeviceC;
+                            cudaMalloc(&DeviceA, SizeA);
+                            cudaMalloc(&DeviceB, SizeB);
+                            cudaMalloc(&DeviceC, SizeC);
+
+                            cudaMemcpy(DeviceA, CurrentResult, SizeA, cudaMemcpyHostToDevice);
+                            cudaMemcpy(DeviceB, Matrices[K], SizeB, cudaMemcpyHostToDevice);
+                            cudaMemset(DeviceC, 0, SizeC);
+
+                            if (strcmp(Algorithm, "simple") == 0)
+                            {
+                                dim3 ThreadsPerBlock(16, 16);
+                                dim3 BlocksPerGrid((ResultWidth + 15) / 16, (ResultHeight + 15) / 16);
+                                MatMulKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(
+                                    DeviceA, DeviceB, DeviceC, CurrentHeight, CurrentWidth, NextWidth);
+                            }
+                            else
+                            {
+                                dim3 ThreadsPerBlock(TILE_WIDTH, TILE_WIDTH);
+                                dim3 BlocksPerGrid((ResultWidth + TILE_WIDTH - 1) / TILE_WIDTH,
+                                                   (ResultHeight + TILE_WIDTH - 1) / TILE_WIDTH);
+                                TiledMatmulKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(
+                                    DeviceA, DeviceB, DeviceC, CurrentHeight, CurrentWidth, NextWidth);
+                            }
+
+                            cudaMemcpy(NewResult, DeviceC, SizeC, cudaMemcpyDeviceToHost);
+
+                            cudaFree(DeviceA);
+                            cudaFree(DeviceB);
+                            cudaFree(DeviceC);
+
+                            free(CurrentResult);
+                            CurrentResult = NewResult;
+                            CurrentHeight = ResultHeight;
+                            CurrentWidth = ResultWidth;
+                        }
+
+                        fprintf(stdout, "1\n");
+                        PrintMatrix(CurrentResult, CurrentHeight, CurrentWidth);
+
+                        free(CurrentResult);
                     }
+                }
+
+                for (u32 K = 0; K < I; K++)
+                {
+                    if (Matrices[K])
+                    {
+                        free(Matrices[K]);
+                    }
+                }
+                free(Matrices);
+                free(Heights);
+                free(Widths);
+
+                if (I < MatrixCount)
+                {
+                    fprintf(stderr, "Error: Failed to read matrix %d\n", I + 1);
                     ExitCode = 1;
                 }
             }
             else
             {
-                fprintf(stderr, "Error: Expected exactly 2 matrices for multiplication\n");
+                fprintf(stderr, "Error: Expected at least 2 matrices for multiplication\n");
                 ExitCode = 1;
             }
         }
@@ -171,6 +199,7 @@ int main(int ArgumentCount, char *Arguments[])
         fprintf(stderr, "  <height2> <width2>\n");
         fprintf(stderr, "  <matrix2_data>\n");
         fprintf(stderr, "  ...\n");
+        fprintf(stderr, "\nPerforms chain multiplication: A*B*C*... = ((A*B)*C)*...\n");
         ExitCode = 1;
     }
 
