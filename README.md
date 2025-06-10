@@ -65,6 +65,26 @@ from PMPP.  Wrote a simple program to query cuda device properties.
 Wrote a Random Matrix Generator using the cuRand library.
 Values generated follow an uniform distribution over [0, 1].
 
+Refactored structured of the project inspired by Computer Enhance
+code.
+
+Also created the following CLI's:
+
+- matgen: Generate a sequence of matrices
+- matmul: Multiplicates matrices from stdin
+
+With them I was able to diagnose some bugs in the previous
+matmul kernels.
+
+#### Day 09
+
+Wrote a Matrix Tranpose Kernel. Created the matpose CLI
+that tranposes a matrix from the command line.
+
+Read parts of Chapter 06 from PMPP.
+
+Thinking I need to work on some instrumentation profiling.
+
 ### Notes
 
 ### Compiling directly to ptx

@@ -59,6 +59,10 @@ build_applications() {
     print_info "Building matmul..."
     ./build_single.sh day_008_matmul_main.cu
 
+    # Build matpose
+    print_info "Building matpose..."
+    ./build_single.sh day_009_matpose_main.cu
+
     print_info "Build completed successfully."
 }
 
@@ -83,14 +87,15 @@ install_applications() {
         exit 1
     fi
 
-    if [ -f "build/day_008_matmul_main.cu${SUFFIX}" ]; then
-        cp "build/day_008_matmul_main.cu${SUFFIX}" "$INSTALL_DIR/matmul"
-        chmod +x "$INSTALL_DIR/matmul"
-        print_info "Installed matmul"
+    if [ -f "build/day_009_matpose_main.cu${SUFFIX}" ]; then
+        cp "build/day_009_matpose_main.cu${SUFFIX}" "$INSTALL_DIR/matpose"
+        chmod +x "$INSTALL_DIR/matpose"
+        print_info "Installed matpose"
     else
-        print_error "matmul executable not found in build directory"
+        print_error "matpose executable not found in build directory"
         exit 1
     fi
+
 }
 
 # Verify installation
@@ -111,9 +116,16 @@ verify_installation() {
         exit 1
     fi
 
+    if [ -x "$INSTALL_DIR/matpose" ]; then
+        print_info "matpose installed successfully"
+    else
+        print_error "matpose installation failed"
+        exit 1
+    fi
+
     # Test the pipeline
     print_info "Testing installation..."
-    if "$INSTALL_DIR/matgen" uniform 12345 2 2 2 2 2 | "$INSTALL_DIR/matmul" tiled > /dev/null 2>&1; then
+    if "$INSTALL_DIR/matgen" uniform 12345 2 2 2 2 2 | "$INSTALL_DIR/matpose" | "$INSTALL_DIR/matmul" tiled > /dev/null 2>&1; then
         print_info "Installation test passed"
     else
         print_warning "Installation test failed, but binaries are installed"
