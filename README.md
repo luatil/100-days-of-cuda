@@ -85,6 +85,14 @@ Read parts of Chapter 06 from PMPP.
 
 Thinking I need to work on some instrumentation profiling.
 
+#### Day 10
+
+Wrote a Matrix/Vector Sum Kernel. It uses a tree-based
+reduction to calculate the sum of all the elements in the
+Matrix/Vector.
+
+Created the matsum CLI.
+
 ### Notes
 
 ### Compiling directly to ptx

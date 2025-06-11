@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Install script for matgen and matmul
-# This script builds and installs the matrix generation and multiplication tools
+# Install script for matgen, matmul, matpose, and matsum
+# This script builds and installs the matrix generation, multiplication, transpose, and vector sum tools
 
 set -e  # Exit on any error
 
@@ -63,6 +63,10 @@ build_applications() {
     print_info "Building matpose..."
     ./build_single.sh day_009_matpose_main.cu
 
+    # Build matsum
+    print_info "Building matsum..."
+    ./build_single.sh day_010_matsum_main.cu
+
     print_info "Build completed successfully."
 }
 
@@ -87,12 +91,30 @@ install_applications() {
         exit 1
     fi
 
+    if [ -f "build/day_008_matmul_main.cu${SUFFIX}" ]; then
+        cp "build/day_008_matmul_main.cu${SUFFIX}" "$INSTALL_DIR/matmul"
+        chmod +x "$INSTALL_DIR/matmul"
+        print_info "Installed matmul"
+    else
+        print_error "matmul executable not found in build directory"
+        exit 1
+    fi
+
     if [ -f "build/day_009_matpose_main.cu${SUFFIX}" ]; then
         cp "build/day_009_matpose_main.cu${SUFFIX}" "$INSTALL_DIR/matpose"
         chmod +x "$INSTALL_DIR/matpose"
         print_info "Installed matpose"
     else
         print_error "matpose executable not found in build directory"
+        exit 1
+    fi
+
+    if [ -f "build/day_010_matsum_main.cu${SUFFIX}" ]; then
+        cp "build/day_010_matsum_main.cu${SUFFIX}" "$INSTALL_DIR/matsum"
+        chmod +x "$INSTALL_DIR/matsum"
+        print_info "Installed matsum"
+    else
+        print_error "matsum executable not found in build directory"
         exit 1
     fi
 
@@ -120,6 +142,13 @@ verify_installation() {
         print_info "matpose installed successfully"
     else
         print_error "matpose installation failed"
+        exit 1
+    fi
+
+    if [ -x "$INSTALL_DIR/matsum" ]; then
+        print_info "matsum installed successfully"
+    else
+        print_error "matsum installation failed"
         exit 1
     fi
 
@@ -152,6 +181,7 @@ path_info() {
     echo "Usage examples:"
     echo "  $INSTALL_DIR/matgen uniform 12345 2 10 20 20 10 | $INSTALL_DIR/matmul simple"
     echo "  $INSTALL_DIR/matgen uniform 54321 2 3 2 2 3 | $INSTALL_DIR/matmul tiled"
+    echo "  $INSTALL_DIR/matgen seq 12345 1 1 10 | $INSTALL_DIR/matsum"
 }
 
 # Print usage
@@ -193,7 +223,7 @@ done
 
 # Main installation process
 main() {
-    print_info "Starting installation of matgen and matmul..."
+    print_info "Starting installation of matgen, matmul, matpose, and matsum..."
     print_info "Install directory: $INSTALL_DIR"
     print_info "Build type: $BUILD_TYPE"
     echo
