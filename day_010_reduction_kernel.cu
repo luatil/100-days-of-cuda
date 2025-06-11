@@ -41,7 +41,7 @@ typedef int32_t s32;
 #define BLOCK_SIZE 32
 #endif
 
-__global__ void SumVectorBasic(const f32 *Input, f32 *Output, int n)
+__global__ void ReduceVector(const f32 *Input, f32 *Output, int n)
 {
     __shared__ f32 SharedData[BLOCK_SIZE];
 
@@ -49,21 +49,21 @@ __global__ void SumVectorBasic(const f32 *Input, f32 *Output, int n)
     int Tx = threadIdx.x;
 
     // Load data into shared memory
-    SharedData[Tx] = (Tid < n) ? Input[Tid] : 0;
+    SharedData[Tx] = (Tid < n) ? Input[Tid] : 0.0f;
     __syncthreads();
 
-    // Tree reduction
-    for (u32 Step = 1; Step < blockDim.x; Step *= 2)
+    // Tree reduction - improved version without divergence
+    for (int s = blockDim.x / 2; s > 0; s >>= 1)
     {
-        if (Tid % (2 * Step) == 0)
+        if (Tx < s)
         {
-            SharedData[Tid] += SharedData[Tid + Step];
+            SharedData[Tx] += SharedData[Tx + s];
         }
         __syncthreads();
     }
 
-    // Thread 0 writes result
-    if (Tid == 0)
+    // Thread 0 writes result for this block
+    if (Tx == 0)
     {
         Output[blockIdx.x] = SharedData[0];
     }
