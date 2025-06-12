@@ -93,6 +93,12 @@ Matrix/Vector.
 
 Created the matsum CLI.
 
+#### Day 11
+
+Worked on using the cuda event api to benchmark simple kernels.
+Created examples on tuning kernel size, calculating effective
+bandwidth and compute throughput.
+
 ### Notes
 
 ### Compiling directly to ptx
