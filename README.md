@@ -99,6 +99,14 @@ Worked on using the cuda event api to benchmark simple kernels.
 Created examples on tuning kernel size, calculating effective
 bandwidth and compute throughput.
 
+#### Day 12
+
+Created an utility to simplify calculating bandwidth,
+timings and compute throughput of different Cuda Kernels.
+
+Measured vector addition and matmul [simple and tiled]
+with this new profiling harness.
+
 ### Notes
 
 ### Compiling directly to ptx
