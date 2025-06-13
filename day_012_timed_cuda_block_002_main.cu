@@ -7,7 +7,7 @@ typedef float f32;
 
 #include "day_001_macros.h"
 #include "day_001_vector_add_kernel.cu"
-#include "day_012_timed_cuda_block_001.cu"
+#include "day_012_timed_cuda_block_002.cu"
 
 int main(int ArgumentCount, char **Arguments)
 {
@@ -53,10 +53,21 @@ int main(int ArgumentCount, char **Arguments)
             AddKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceA, DeviceB, DeviceC, N);
         }
 
+        // Kernel Launch
+        {
+            TimeCudaBandwidth("Add Kernel", 2 * SizeInBytes, SizeInBytes, 1.0f / (3.0f * 4.0f));
+            u32 ThreadsPerBlock = 32;
+            u32 BlocksPerGrid = (N + ThreadsPerBlock - 1) / ThreadsPerBlock;
+            AddKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceA, DeviceB, DeviceC, N);
+        }
+
         // Memcpy Device To Host
         {
             cudaMemcpy(HostC, DeviceC, SizeInBytes, cudaMemcpyDeviceToHost);
         }
+
+        fprintf(stdout, "First element: %f\n", HostC[0]);
+        fprintf(stdout, "Last element: %f\n", HostC[N - 1]);
     }
     else
     {
