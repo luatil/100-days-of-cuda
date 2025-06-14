@@ -107,6 +107,21 @@ timings and compute throughput of different Cuda Kernels.
 Measured vector addition and matmul [simple and tiled]
 with this new profiling harness.
 
+#### Day 13
+
+Worked with coarsening in vector add kernels. Did not
+see any difference with a coarse factor of 2.
+
+Worked with cudaOccupancyMaxPotentialBlockSize to find
+likely optimal blockSizes.
+
+Used the ncu CLI tool to check different metrics from
+simple kernels.
+
+References:
+
+- https://www.youtube.com/watch?v=SGhfUhlowB4
+
 ### Notes
 
 ### Compiling directly to ptx
