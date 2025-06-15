@@ -122,6 +122,13 @@ References:
 
 - https://www.youtube.com/watch?v=SGhfUhlowB4
 
+#### Day 14
+
+Wrote a repetition tester for profiling different kernels.
+Profiled different vector addition kernels with
+the repetition tester.
+
+
 ### Notes
 
 ### Compiling directly to ptx
