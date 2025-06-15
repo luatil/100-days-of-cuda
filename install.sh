@@ -1,13 +1,22 @@
 #!/bin/bash
 
-# Install script for matgen, matmul, matpose, and matsum
-# This script builds and installs the matrix generation, multiplication, transpose, and vector sum tools
+# Install script for matrix tools
+# This script builds and installs applications based on a simple table configuration
 
 set -e  # Exit on any error
 
 # Configuration
 INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 BUILD_TYPE="${BUILD_TYPE:-release}"
+
+# Application table: "source_file:app_name"
+# Add or modify entries here as needed
+APPLICATIONS=(
+    "day_008_matgen_main.cu:matgen"
+    "day_008_matmul_main.cu:matmul"
+    "day_009_matpose_main.cu:matpose"
+    "day_010_matsum_main.cu:matsum"
+)
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,21 +60,13 @@ create_install_dir() {
 build_applications() {
     print_info "Building applications..."
 
-    # Build matgen
-    print_info "Building matgen..."
-    ./build_single.sh day_008_matgen_main.cu
-
-    # Build matmul
-    print_info "Building matmul..."
-    ./build_single.sh day_008_matmul_main.cu
-
-    # Build matpose
-    print_info "Building matpose..."
-    ./build_single.sh day_009_matpose_main.cu
-
-    # Build matsum
-    print_info "Building matsum..."
-    ./build_single.sh day_010_matsum_main.cu
+    for app_entry in "${APPLICATIONS[@]}"; do
+        source_file="${app_entry%:*}"
+        app_name="${app_entry#*:}"
+        
+        print_info "Building $app_name from $source_file..."
+        ./build_single.sh "$source_file"
+    done
 
     print_info "Build completed successfully."
 }
@@ -81,76 +82,40 @@ install_applications() {
         SUFFIX="_rn"
     fi
 
-    # Copy executables
-    if [ -f "build/day_008_matgen_main.cu${SUFFIX}" ]; then
-        cp "build/day_008_matgen_main.cu${SUFFIX}" "$INSTALL_DIR/matgen"
-        chmod +x "$INSTALL_DIR/matgen"
-        print_info "Installed matgen"
-    else
-        print_error "matgen executable not found in build directory"
-        exit 1
-    fi
-
-    if [ -f "build/day_008_matmul_main.cu${SUFFIX}" ]; then
-        cp "build/day_008_matmul_main.cu${SUFFIX}" "$INSTALL_DIR/matmul"
-        chmod +x "$INSTALL_DIR/matmul"
-        print_info "Installed matmul"
-    else
-        print_error "matmul executable not found in build directory"
-        exit 1
-    fi
-
-    if [ -f "build/day_009_matpose_main.cu${SUFFIX}" ]; then
-        cp "build/day_009_matpose_main.cu${SUFFIX}" "$INSTALL_DIR/matpose"
-        chmod +x "$INSTALL_DIR/matpose"
-        print_info "Installed matpose"
-    else
-        print_error "matpose executable not found in build directory"
-        exit 1
-    fi
-
-    if [ -f "build/day_010_matsum_main.cu${SUFFIX}" ]; then
-        cp "build/day_010_matsum_main.cu${SUFFIX}" "$INSTALL_DIR/matsum"
-        chmod +x "$INSTALL_DIR/matsum"
-        print_info "Installed matsum"
-    else
-        print_error "matsum executable not found in build directory"
-        exit 1
-    fi
-
+    # Install each application
+    for app_entry in "${APPLICATIONS[@]}"; do
+        source_file="${app_entry%:*}"
+        app_name="${app_entry#*:}"
+        
+        build_executable="build/${source_file}${SUFFIX}"
+        install_path="$INSTALL_DIR/$app_name"
+        
+        if [ -f "$build_executable" ]; then
+            cp "$build_executable" "$install_path"
+            chmod +x "$install_path"
+            print_info "Installed $app_name"
+        else
+            print_error "$app_name executable not found: $build_executable"
+            exit 1
+        fi
+    done
 }
 
 # Verify installation
 verify_installation() {
     print_info "Verifying installation..."
 
-    if [ -x "$INSTALL_DIR/matgen" ]; then
-        print_info "matgen installed successfully"
-    else
-        print_error "matgen installation failed"
-        exit 1
-    fi
-
-    if [ -x "$INSTALL_DIR/matmul" ]; then
-        print_info "matmul installed successfully"
-    else
-        print_error "matmul installation failed"
-        exit 1
-    fi
-
-    if [ -x "$INSTALL_DIR/matpose" ]; then
-        print_info "matpose installed successfully"
-    else
-        print_error "matpose installation failed"
-        exit 1
-    fi
-
-    if [ -x "$INSTALL_DIR/matsum" ]; then
-        print_info "matsum installed successfully"
-    else
-        print_error "matsum installation failed"
-        exit 1
-    fi
+    for app_entry in "${APPLICATIONS[@]}"; do
+        app_name="${app_entry#*:}"
+        install_path="$INSTALL_DIR/$app_name"
+        
+        if [ -x "$install_path" ]; then
+            print_info "$app_name installed successfully"
+        else
+            print_error "$app_name installation failed"
+            exit 1
+        fi
+    done
 
     # Test the pipeline
     print_info "Testing installation..."
@@ -167,9 +132,18 @@ path_info() {
     echo
     echo "The binaries have been installed to: $INSTALL_DIR"
     echo
+    
+    # List installed applications
+    echo "Installed applications:"
+    for app_entry in "${APPLICATIONS[@]}"; do
+        app_name="${app_entry#*:}"
+        echo "  - $app_name"
+    done
+    echo
+    
     if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
         print_warning "Note: $INSTALL_DIR is not in your PATH"
-        echo "To use matgen and matmul from anywhere, add this line to your ~/.bashrc or ~/.zshrc:"
+        echo "To use the installed tools from anywhere, add this line to your ~/.bashrc or ~/.zshrc:"
         echo "export PATH=\"$INSTALL_DIR:\$PATH\""
         echo
         echo "Or run: echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
@@ -195,6 +169,13 @@ usage() {
     echo "Environment variables:"
     echo "  INSTALL_DIR         Installation directory (default: \$HOME/.local/bin)"
     echo "  BUILD_TYPE          Build type: release or debug (default: release)"
+    echo ""
+    echo "Applications to be installed:"
+    for app_entry in "${APPLICATIONS[@]}"; do
+        source_file="${app_entry%:*}"
+        app_name="${app_entry#*:}"
+        echo "  $source_file -> $app_name"
+    done
     echo ""
     echo "Example:"
     echo "  $0                                    # Install release builds to ~/.local/bin"
@@ -223,9 +204,17 @@ done
 
 # Main installation process
 main() {
-    print_info "Starting installation of matgen, matmul, matpose, and matsum..."
+    print_info "Starting installation of matrix tools..."
     print_info "Install directory: $INSTALL_DIR"
     print_info "Build type: $BUILD_TYPE"
+    echo
+    
+    print_info "Applications to build and install:"
+    for app_entry in "${APPLICATIONS[@]}"; do
+        source_file="${app_entry%:*}"
+        app_name="${app_entry#*:}"
+        echo "  $source_file -> $app_name"
+    done
     echo
 
     check_dependencies
