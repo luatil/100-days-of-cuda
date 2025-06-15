@@ -128,6 +128,10 @@ Wrote a repetition tester for profiling different kernels.
 Profiled different vector addition kernels with
 the repetition tester.
 
+#### Day 15
+
+Worked through the different reduction kernels in chapter 10
+from PMPP.
 
 ### Notes
 
