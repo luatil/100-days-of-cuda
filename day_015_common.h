@@ -1,9 +1,20 @@
-#ifndef DAY_001_MACROS_H
-#define DAY_001_MACROS_H
+#ifndef DAY_015_COMMON_H
+#define DAY_015_COMMON_H
+#include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
+
+typedef uint8_t u8;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef float f32;
 
 #define AllocateCPU(_Type, _NumberOfElements) (_Type *)malloc(sizeof(_Type) * _NumberOfElements)
 #define FreeCPU(_Ptr) free(_Ptr)
+
+#ifndef Assert
+#define Assert(_Expr) assert(_Expr)
+#endif
 
 #ifndef DEBUG_ENABLED
 #define DEBUG_ENABLED 1
@@ -21,4 +32,4 @@
 #define DbgS32(_Val)
 #endif
 
-#endif // DAY_001_MACROS_H
+#endif // DAY_015_COMMON_H
