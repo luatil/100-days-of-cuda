@@ -133,6 +133,22 @@ the repetition tester.
 Worked through the different reduction kernels in chapter 10
 from PMPP.
 
+#### Day 16
+
+Profiled reduction kernels with different coarsening factors.
+Started stuyding the cupti api for querying different
+gpu counters.
+
+Want to to modify the profiling harness to calculate
+compute throughput based on actual inst\_executed
+rather than a theoretical Arithmetic Intensity.
+
+Best resource I found for the api is
+https://github.com/eunomia-bpf/cupti-tutorial
+
+Was able to compile, but getting errors
+that this api is not supported on my gpu (3060).
+
 ### Notes
 
 ### Compiling directly to ptx
