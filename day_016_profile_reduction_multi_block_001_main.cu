@@ -1,5 +1,6 @@
 #include "day_014_repetition_tester.cu"
 #include "day_015_common.h"
+#include <stdlib.h>
 
 #define BLOCK_DIM 256
 
@@ -123,9 +124,21 @@ __global__ void ReductionKernel_CoarseFactor16(f32 *Input, f32 *Output, u32 N)
 }
 #undef COARSE_FACTOR
 
-int main()
+int main(int argc, char **argv)
 {
-    const u32 N = BLOCK_DIM * 256;
+    u32 N = BLOCK_DIM * 256;
+
+    if (argc > 1)
+    {
+        N = atoi(argv[1]);
+        if (N == 0)
+        {
+            fprintf(stderr, "Invalid input size. Using default size.\n");
+            N = BLOCK_DIM * 256;
+        }
+    }
+
+    printf("Input size: %u elements\n", N);
     f32 *Input = AllocateCPU(f32, N);
 
     for (u32 I = 0; I < N; I++)
@@ -147,7 +160,7 @@ int main()
     {
         u32 BlocksPerGrid = (N + (BLOCK_DIM * 2) - 1) / (BLOCK_DIM * 2);
         cuda_repetition_tester Tester = {};
-        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f, 2);
+        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f / 4.0f, 6);
 
         while (IsTesting(&Tester))
         {
@@ -163,7 +176,7 @@ int main()
     {
         u32 BlocksPerGrid = (N + (BLOCK_DIM * 4) - 1) / (BLOCK_DIM * 4);
         cuda_repetition_tester Tester = {};
-        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f, 2);
+        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f / 4.0f, 5);
 
         while (IsTesting(&Tester))
         {
@@ -179,7 +192,7 @@ int main()
     {
         u32 BlocksPerGrid = (N + (BLOCK_DIM * 8) - 1) / (BLOCK_DIM * 8);
         cuda_repetition_tester Tester = {};
-        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f, 2);
+        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f / 4.0f, 5);
 
         while (IsTesting(&Tester))
         {
@@ -195,7 +208,7 @@ int main()
     {
         u32 BlocksPerGrid = (N + (BLOCK_DIM * 16) - 1) / (BLOCK_DIM * 16);
         cuda_repetition_tester Tester = {};
-        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f, 2);
+        StartTesting(&Tester, SizeInBytes, sizeof(f32), 1.0f / 4.0f, 5);
 
         while (IsTesting(&Tester))
         {
