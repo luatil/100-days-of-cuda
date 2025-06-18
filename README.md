@@ -149,6 +149,16 @@ https://github.com/eunomia-bpf/cupti-tutorial
 Was able to compile, but getting errors
 that this api is not supported on my gpu (3060).
 
+#### Day 17
+
+Wrote a softmax kernel. Studied llm.c implementation
+of softmax kernels. Re-watched Simon Oz video about
+it. Implemented a cpu reference kernel and a naive
+single block gpu kernel with shared memory.
+
+Want to profile both of them before implementing
+more perfomant versions.
+
 ### Notes
 
 ### Compiling directly to ptx
