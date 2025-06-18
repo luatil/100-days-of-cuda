@@ -159,6 +159,10 @@ single block gpu kernel with shared memory.
 Want to profile both of them before implementing
 more perfomant versions.
 
+#### Day 18
+
+WIP better softmax impl.
+
 ### Notes
 
 ### Compiling directly to ptx
