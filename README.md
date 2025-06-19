@@ -163,6 +163,15 @@ more perfomant versions.
 
 WIP better softmax impl.
 
+#### Day 19
+
+Finished implementation of a better softmax kernel.
+Used atomicCAS which I am not sure if it is a really
+good idea.
+
+Kinda need to profile the kernels to check the
+overall perf.
+
 ### Notes
 
 ### Compiling directly to ptx
