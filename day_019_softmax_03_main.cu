@@ -65,12 +65,14 @@ static void CPU_SoftMax_01(const f32 *Input, f32 *Output, u32 N)
     {
         MaxValue = Max(MaxValue, Input[I]);
     }
+    Dbg(MaxValue);
 
     f32 MaxSum = 0.0f;
     for (u32 I = 0; I < N; I++)
     {
         MaxSum += expf(Input[I] - MaxValue);
     }
+    Dbg(MaxSum);
 
     for (u32 I = 0; I < N; I++)
     {
@@ -100,7 +102,7 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     u32 Tid = Segment + threadIdx.x;
     u32 Tx = threadIdx.x;
 
-    Shared[Tx] = -FLT_MIN;
+    Shared[Tx] = -FLT_MAX;
     for (u32 I = 0; I < COARSE_FACTOR; I++)
     {
         if ((Tid + BLOCK_DIM * I) < N)
@@ -109,8 +111,8 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
         }
     }
 
-    // printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
-    for (u32 Stride = blockDim.x / 2; Stride >= 1; Stride /= 2)
+    printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
+    for (u32 Stride = (blockDim.x + 2 - 1) / 2; Stride >= 1; Stride /= 2)
     {
         __syncthreads();
         if (Tx < Stride)
@@ -120,9 +122,9 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     }
 
     __syncthreads();
-    // printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
     if (Tx == 0)
     {
+        printf("MAX: Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
         atomicMaxFloat(GlobalMax, Shared[0]);
     }
 }
@@ -145,9 +147,10 @@ __global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *Glob
     }
     Shared[Tx] = Sum;
 
-    //  printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
+    printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
 
-    for (u32 Stride = blockDim.x / 2; Stride >= 1; Stride /= 2)
+    // for (u32 Stride = blockDim.x / 2; Stride >= 1; Stride /= 2)
+    for (u32 Stride = (blockDim.x + 2 - 1) / 2; Stride >= 1; Stride /= 2)
     {
         __syncthreads();
         if (Tx < Stride)
@@ -159,6 +162,7 @@ __global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *Glob
     // NOTE(luatil): Shared[0] already has expfed value
     if (Tx == 0)
     {
+        printf("SUM: Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
         atomicAdd(GlobalMaxSum, Shared[0]);
     }
 }
@@ -176,7 +180,7 @@ __global__ void SoftMax_Kernel_02_Map(const f32 *Input, const f32 *GlobalMax, co
 
 static void GPU_SoftMax_02(const f32 *Device_Input, f32 *Device_Output, u32 N)
 {
-    u32 ThreadsPerBlock = Min(BLOCK_DIM, N);
+    u32 ThreadsPerBlock = BLOCK_DIM;
     u32 BlocksPerGrid = (N + (ThreadsPerBlock * COARSE_FACTOR) - 1) / (ThreadsPerBlock * COARSE_FACTOR);
 
     f32 *Device_GlobalMax, *Device_GlobalMaxSum;
@@ -200,10 +204,15 @@ static void GPU_SoftMax_02(const f32 *Device_Input, f32 *Device_Output, u32 N)
 
 int main()
 {
+#if 0
     u32 N = 1000 * 50;
     // u32 N = 1024;
     // u64 Seed = 432432;
     f32 *Input = MakeSequentialF32(N);
+#else
+    u32 N = 4;
+    f32 Input[] = {1000, -1.0, -2.0f, -3.0f};
+#endif
     f32 *Output = AllocateCPU(f32, N);
     f32 *Reference_Output = AllocateCPU(f32, N);
 
@@ -253,7 +262,7 @@ int main()
 
     Assert(fabsf(OutputSum - 1.0f) < 0.001f);
 
-    FreeCPU(Input);
+    // FreeCPU(Input);
     FreeCPU(Output);
     cudaFree(Device_Input);
     cudaFree(Device_Output);
