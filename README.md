@@ -172,6 +172,23 @@ good idea.
 Kinda need to profile the kernels to check the
 overall perf.
 
+#### Day 20
+
+Created kernels for computing the Dot Product
+of two vectors. Based on a LeetGPU problem.
+
+Need to find a better way of organizing
+multiple different kernels that fit the same
+function definition.
+
+Also need to find a way to tune the kernels
+with BLOCK_DIM and COARSE_FACTOR that I
+should know at compile time.
+
+#### Day 21
+
+Implemented a MSE Kernel.
+
 ### Notes
 
 ### Compiling directly to ptx
