@@ -189,6 +189,15 @@ should know at compile time.
 
 Implemented a MSE Kernel.
 
+
+#### Day 22
+
+Implemented some PrefixSum kernels.
+
+This video helped a lot:
+
+- https://www.youtube.com/watch?v=ZKrWyEqqPVY
+
 ### Notes
 
 ### Compiling directly to ptx
