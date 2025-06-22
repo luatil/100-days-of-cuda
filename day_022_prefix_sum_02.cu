@@ -16,14 +16,21 @@ __global__ void CalculatePartialSums(const float *Input, float *Output, float *P
     int Tx = threadIdx.x;
 
     Shared[Tx] = Tid < N ? Input[Tid] : 0.0f;
+    __syncthreads();
 
     for (int Stride = 1; Stride <= blockDim.x / 2; Stride *= 2)
     {
+        float Temp = 0.0f;
+        if (Tx >= Stride)
+        {
+            Temp = Shared[Tx] + Shared[Tx - Stride];
+        }
         __syncthreads();
         if (Tx >= Stride)
         {
-            Shared[Tx] += Shared[Tx - Stride];
+            Shared[Tx] = Temp;
         }
+        __syncthreads();
     }
 
 #if DEBUG
@@ -31,24 +38,12 @@ __global__ void CalculatePartialSums(const float *Input, float *Output, float *P
     printf("Input [%d]=%.3f\n", Tid, Input[Tid]);
 #endif
 
-    __syncthreads();
     if (Tid < N)
     {
         Output[Tid] = Shared[Tx];
     }
 
-    int IsLastBlock = (blockDim.x * (blockIdx.x + 1)) > N;
-    int IsLastElementOfInput = Tx == ((N - 1) - blockDim.x * blockIdx.x);
-    int IsLastElementOfBlock = Tx == (blockDim.x - 1);
-
-    if (IsLastBlock)
-    {
-        if (IsLastElementOfInput)
-        {
-            PartialSums[blockIdx.x] = Shared[Tx];
-        }
-    }
-    else if (IsLastElementOfBlock)
+    if (Tx == BLOCK_DIM - 1)
     {
         PartialSums[blockIdx.x] = Shared[Tx];
     }
