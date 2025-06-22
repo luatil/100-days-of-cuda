@@ -1,5 +1,4 @@
 #ifndef LEET_GPU_NO_IMPORT
-#define LEET_GPU_NO_IMPORT
 #include "solve.h"
 #include <cuda_runtime.h>
 #endif

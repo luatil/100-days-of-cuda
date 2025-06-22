@@ -3,11 +3,8 @@
 
 #define Max(_a, _b) _a > _b ? _a : _b
 
-#define SOLUTION 1
-
-#if SOLUTION == 1
-#include "day_022_prefix_sum_01.cu"
-#endif
+// #include "day_022_prefix_sum_02.cu"
+#include "day_022_prefix_sum_02.cu"
 
 int main()
 {
