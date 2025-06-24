@@ -1,6 +1,7 @@
 #include <stdio.h>
 
-#include "day_023_histogram_00.cu"
+// #include "day_023_histogram_00.cu"
+#include "day_023_histogram_01.cu"
 
 /*
  * Write a GPU program that computes the histogram of an array of 32-bit
