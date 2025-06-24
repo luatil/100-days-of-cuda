@@ -198,6 +198,10 @@ This video helped a lot:
 
 - https://www.youtube.com/watch?v=ZKrWyEqqPVY
 
+#### Day 23
+
+Implemented a Histogram kernel.
+
 ### Notes
 
 ### Compiling directly to ptx
