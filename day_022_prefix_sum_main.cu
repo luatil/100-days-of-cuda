@@ -4,7 +4,8 @@
 #define Max(_a, _b) _a > _b ? _a : _b
 
 // #include "day_022_prefix_sum_02.cu"
-#include "day_022_prefix_sum_02.cu"
+// #include "day_022_prefix_sum_02.cu"
+#include "day_022_prefix_sum_03.cu"
 
 int main()
 {

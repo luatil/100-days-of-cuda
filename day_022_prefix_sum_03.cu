@@ -8,6 +8,7 @@
 #define DEBUG 0
 #define DEBUG_PARTIAL_SUMS 0
 
+// TODO(luatil): Implement double buffering
 __global__ void CalculatePartialSums(const float *Input, float *Output, float *PartialSums, int N)
 {
     __shared__ float Shared[BLOCK_DIM];
