@@ -1,0 +1,18 @@
+CompileFlags:
+  Add:
+    - -I/usr/local/cuda/include
+    - -I/usr/local/cuda/extras/CUPTI/include
+    - -L/usr/local/cuda/lib64
+    - -L/usr/local/cuda/extras/CUPTI/lib64
+    - -lcuda
+    - -lcudart
+    - -lcupti
+    - -lcurand
+    - -std=c++11
+    - --cuda-gpu-arch=sm_86 # Adjust for your GPU architecture
+    - --cuda-path=/usr/local/cuda
+  Remove:
+    - -W*  # Remove some warnings that might be noisy
+
+Index:
+  Background: Build

@@ -16,6 +16,8 @@ APPLICATIONS=(
     "day_008_matmul_main.cu:matmul"
     "day_009_matpose_main.cu:matpose"
     "day_010_matsum_main.cu:matsum"
+    "day_015_monte_carlo_integration_generator_main.cu:mcarlogen"
+    "day_015_monte_carlo_integration_main.cu:mcarlo"
 )
 
 # Colors for output

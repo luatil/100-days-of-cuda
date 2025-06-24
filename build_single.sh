@@ -24,10 +24,10 @@ if command -v nvcc &> /dev/null; then
     fi
 
     # Debug build
-    nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 "../$1" -o "${filename}_dn" $EXTRA_LIBS
+    nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 "../$1" -o "${filename}_dn" $EXTRA_LIBS -lcupti -lcuda
 
     # Release build
-    nvcc -DDEBUG_ENABLED=0 -O3 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 "../$1" -o "${filename}_rn" $EXTRA_LIBS
+    nvcc -DDEBUG_ENABLED=0 -O3 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 "../$1" -o "${filename}_rn" $EXTRA_LIBS -lcupti -lcudart -lcuda
 else
     echo "nvcc not found - Skipping builds with nvcc"
 fi
