@@ -2,13 +2,52 @@
 
 #define Max(_a, _b) (_a < _b) ? _b : _a
 
-__global__ void PrefixSum(const float *Input, float *Output, const int N)
+#define BLOCK_DIM 256
+
+__global__ void CalculatePartialPrefixSums(const float *Input, float *Output, float *PartialPrefixSums, const int N)
 {
-    Output[0] = Input[0];
-    for (int I = 1; I < N; I++)
+    __shared__ float Shared[BLOCK_DIM];
+
+    const int Tid = blockDim.x * blockIdx.x + threadIdx.x;
+    const int Tx = threadIdx.x;
+
+    Shared[Tx] = Tid < N ? Input[Tid] : 0.0f;
+    __syncthreads();
+
+    for(int Stride = 1; Stride <= blockDim.x / 2; Stride *= 2)
     {
-        Output[I] = Input[I] + Output[I-1];
+        float Temp = 0.0f;
+        if (Tx >= Stride)
+        {
+            Temp = Shared[Tx] + Shared[Tx - Stride];
+        }
+        __syncthreads();
+        if (Tx >= Stride)
+        {
+            Shared[Tx] = Temp;
+        }
+        __syncthreads();
     }
+
+    if (Tid < N)
+    {
+        Output[Tid] = Shared[Tx];
+    }
+
+    if (Tx == BLOCK_DIM - 1)
+    {
+        // PartialSums[blockIdx.x] = Shared[Tx];
+    }
+}
+
+// Input and Output are device pointers
+static void PrefixSum(const float *Input, float *Output, const int N)
+{
+    const int GridDim = (N + BLOCK_DIM - 1) / BLOCK_DIM;
+    float *PartialPrefixSums = 0;
+    CalculatePartialPrefixSums<<<GridDim, BLOCK_DIM>>>(Input, Output, PartialPrefixSums, N);
+    // SimplePrefixSum<<<1,1>>>(PartialPrefixSums, GridDim);
+    // ExpandPartialSums<<<GridDim, BLOCK_DIM>>>(Output, PartialPrefixSums, N);
 }
 
 
@@ -27,7 +66,7 @@ int main()
 
     cudaMemcpy(DeviceInput, HostInput, sizeof(float)*N, cudaMemcpyHostToDevice);
 
-    PrefixSum<<<1,1>>>(DeviceInput, DeviceOutput, N);
+    PrefixSum(DeviceInput, DeviceOutput, N);
 
     cudaMemcpy(HostOutput, DeviceOutput, sizeof(float)*N, cudaMemcpyDeviceToHost);
 
