@@ -202,6 +202,10 @@ This video helped a lot:
 
 Implemented a Histogram kernel.
 
+#### Day 24
+
+WIP Topk Kernel
+
 ### Notes
 
 ### Compiling directly to ptx
