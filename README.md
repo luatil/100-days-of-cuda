@@ -182,7 +182,7 @@ multiple different kernels that fit the same
 function definition.
 
 Also need to find a way to tune the kernels
-with BLOCK_DIM and COARSE_FACTOR that I
+with BLOCK\_DIM and COARSE\_FACTOR that I
 should know at compile time.
 
 #### Day 21
@@ -205,6 +205,10 @@ Implemented a Histogram kernel.
 #### Day 24
 
 WIP Topk Kernel
+
+#### Day 25
+
+Reviewing Prefix Sum.
 
 ### Notes
 
