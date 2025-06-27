@@ -210,6 +210,10 @@ WIP Topk Kernel
 
 Reviewing Prefix Sum.
 
+#### Day 26
+
+Profiling histogram kernel
+
 ### Notes
 
 ### Compiling directly to ptx
