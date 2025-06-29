@@ -214,6 +214,18 @@ Reviewing Prefix Sum.
 
 Profiling histogram kernel
 
+#### Day 27
+
+Working with Cuda Graphs API.
+
+#### Day 28
+
+Fixing a bug in the Cuda Graph Example
+
+#### Day 29
+
+Leaky Relu kernel
+
 ### Notes
 
 ### Compiling directly to ptx
