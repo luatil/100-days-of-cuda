@@ -226,6 +226,10 @@ Fixing a bug in the Cuda Graph Example
 
 Leaky Relu kernel
 
+#### Day 30
+
+WIP Softmax Attention.
+
 ### Notes
 
 ### Compiling directly to ptx
