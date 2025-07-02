@@ -230,6 +230,14 @@ Leaky Relu kernel
 
 WIP Softmax Attention.
 
+#### Day 31
+
+Revisiting / Optimizing Histogram Kernel
+
+#### Day 32
+
+WIP on categorical cross entropy loss kernel
+
 ### Notes
 
 ### Compiling directly to ptx
