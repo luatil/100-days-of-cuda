@@ -238,6 +238,14 @@ Revisiting / Optimizing Histogram Kernel
 
 WIP on categorical cross entropy loss kernel
 
+#### Day 33
+
+More WIP on categorical cross entropy loss kernel
+
+#### Day 34
+
+Revisiting Monte Carlo Integration with a better kernel design
+
 ### Notes
 
 ### Compiling directly to ptx
