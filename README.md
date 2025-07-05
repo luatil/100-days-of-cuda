@@ -246,6 +246,10 @@ More WIP on categorical cross entropy loss kernel
 
 Revisiting Monte Carlo Integration with a better kernel design
 
+#### Day 35
+
+Revisiting Reduction Kernel
+
 ### Notes
 
 ### Compiling directly to ptx
