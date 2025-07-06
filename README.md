@@ -250,6 +250,10 @@ Revisiting Monte Carlo Integration with a better kernel design
 
 Revisiting Reduction Kernel
 
+#### Day 36
+
+Solved the Password Cracking (FNV-1a) LeetGPU problem.
+
 ### Notes
 
 ### Compiling directly to ptx
