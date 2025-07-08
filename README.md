@@ -303,6 +303,10 @@ cat temp.txt | tknize --bpe | embed --rotary | ...
 
 And so on.
 
+Refactoring matmul:
+
+{ matgen -h 3 -w 4; matgen -h 4 -w 10; } | matmul
+
 Possible optimizations:
 
 This pipeline style of thing could even be lazy, otherwise floating
@@ -332,6 +336,7 @@ Would very much like to have a static binary that could easily be copied
 between systems that have or don't have GPUS.
 
 This could double down as a sort of learning path for SIMD on the CPU.
+
 
 ### Resources:
 
