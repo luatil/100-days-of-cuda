@@ -279,6 +279,60 @@ For more details:
 nvdisasm -g -c your_file.cubin > your_file.sass
 ```
 
+### Ideas
+
+Some future ideas for unix-like utils:
+
+Matrix ones:
+
+- mat2img: Receives a matrix from a process and outputs a img. For instance: matgen -h 20 -w 20 -n 1 | mat2img
+- matshape: Receives a matrix from a certain format and converts it to another one. For instance: matgen -h 3 -w 4 | matshape -h 4 -w 3
+
+Image ones:
+
+I think that I could leverage something like the kitty protocol to allow for cool image composition things:
+
+- Read cool_image.jpg and converts it with imblur: imread cool_image.jpg | imblur
+- Perform edge detection after blurring the image: imread cool_image.jpg | imblur --radius 10 | imedge
+
+LLM like ones:
+
+It would be awesome if we could run an LLM by only using unix pipes.
+
+cat temp.txt | tknize --bpe | embed --rotary | ... 
+
+And so on.
+
+Possible optimizations:
+
+This pipeline style of thing could even be lazy, otherwise floating
+point parsing will very clearly be a bottleneck.  Although we could do
+floating point parsing in the GPU for funsies.  I could also just send
+raw data over the pipes. And use matprint for converting to a normal
+format. e.g. matgen --height 3 --width 4 | matprint
+
+Compilation:
+
+Considering switching to something like Cmake. This find_cuda_lib looks
+kinda of annoying to do otherwise.
+
+I also want to only use nvcc for compiling the .cu files and use a normal
+compiler for the other things. Which could be easier to do with cmake (maybe?).
+
+I kinda want to be able to do something like:
+
+- matgen -w 3 -h 4 --cpu 
+- matgen -w 3 -h 4 --gpu
+
+To force the execution.
+
+Default if available would go to the GPU otherwise would go to the CPU.
+
+Would very much like to have a static binary that could easily be copied
+between systems that have or don't have GPUS.
+
+This could double down as a sort of learning path for SIMD on the CPU.
+
 ### Resources:
 
 - https://developer.nvidia.com/blog/understanding-ptx-the-assembly-language-of-cuda-gpu-computing/
