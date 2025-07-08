@@ -254,6 +254,10 @@ Revisiting Reduction Kernel
 
 Solved the Password Cracking (FNV-1a) LeetGPU problem.
 
+#### Day 37
+
+Solved the GEMM (FP16) LeetGPU problem.
+
 ### Notes
 
 ### Compiling directly to ptx
