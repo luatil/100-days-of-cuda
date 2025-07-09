@@ -258,6 +258,10 @@ Solved the Password Cracking (FNV-1a) LeetGPU problem.
 
 Solved the GEMM (FP16) LeetGPU problem.
 
+#### Day 38
+
+WIP Radix Sort LeetGPU.
+
 ### Notes
 
 ### Compiling directly to ptx
@@ -299,7 +303,7 @@ LLM like ones:
 
 It would be awesome if we could run an LLM by only using unix pipes.
 
-cat temp.txt | tknize --bpe | embed --rotary | ... 
+cat temp.txt | tknize --bpe | embed --rotary | ...
 
 And so on.
 
@@ -325,7 +329,7 @@ compiler for the other things. Which could be easier to do with cmake (maybe?).
 
 I kinda want to be able to do something like:
 
-- matgen -w 3 -h 4 --cpu 
+- matgen -w 3 -h 4 --cpu
 - matgen -w 3 -h 4 --gpu
 
 To force the execution.
