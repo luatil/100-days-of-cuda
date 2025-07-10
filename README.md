@@ -189,7 +189,6 @@ should know at compile time.
 
 Implemented a MSE Kernel.
 
-
 #### Day 22
 
 Implemented some PrefixSum kernels.
@@ -261,6 +260,29 @@ Solved the GEMM (FP16) LeetGPU problem.
 #### Day 38
 
 WIP Radix Sort LeetGPU.
+
+#### Day 39
+
+More work in progress on RadixSort Kernel. Feeling that I have to go
+back and implement the domino-style version of prefix sum before coming
+back to this problem.
+
+I am really unsure of how to call an `ExclusiveScan` Kernel from within
+a different kernel. This looks to require a technique I am not
+yet aware.
+
+Did pass through some good resources though:
+
+- What's a Creel video: https://www.youtube.com/watch?v=ujb2CIWE8zY
+- AMD Paper: https://gpuopen.com/download/Introduction_to_GPU_Radix_Sort.pdf
+
+Mostly worked on PMPP book though.
+
+Also build a - WIP - `rsort` command line utility for sorting - similar to
+`sort`.
+
+Feels back to come back to my 3060 after traveling for a bit and only
+being able to code through LeetGPU.
 
 ### Notes
 

@@ -18,6 +18,7 @@ APPLICATIONS=(
     "day_010_matsum_main.cu:matsum"
     "day_015_monte_carlo_integration_generator_main.cu:mcarlogen"
     "day_015_monte_carlo_integration_main.cu:mcarlo"
+    "day_039_radix_sort_main.cu:rsort"
 )
 
 # Colors for output
