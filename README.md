@@ -284,6 +284,27 @@ Also build a - WIP - `rsort` command line utility for sorting - similar to
 Feels back to come back to my 3060 after traveling for a bit and only
 being able to code through LeetGPU.
 
+#### Day 40
+
+Worked on the `psum` command line utility. I am facing a big
+problem here about the perfomance of integer parsing. I ran
+some timers and got the following result:
+
+```bash
+$ psum temp_10e6.txt -v > result.txt
+File Reading     : 1.726186 sec |   220.99 MB/s | 100000000 integers
+Prefix Sum       : 0.068761 sec | 11095.48 MB/s | 100000000 operations
+File Writing     : 3.918460 sec |    97.35 MB/s | 100000000 integers
+Total Time       : 5.713453 sec |   133.53 MB/s | 100000000 integers
+Memory Usage     : 762.94 MB total | input + output arrays
+```
+
+File Writing is by far the slowest part of this pipeline. But file
+reading is also slow enough such that using the GPU becomes somewhat moot.
+
+If I am to continue with this approach of command line utilities I will
+need to find a better way of transmiting data through pipes.
+
 ### Notes
 
 ### Compiling directly to ptx

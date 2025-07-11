@@ -19,6 +19,7 @@ APPLICATIONS=(
     "day_015_monte_carlo_integration_generator_main.cu:mcarlogen"
     "day_015_monte_carlo_integration_main.cu:mcarlo"
     "day_039_radix_sort_main.cu:rsort"
+    "day_040_prefix_sum_revisited_main.cu:psum"
 )
 
 # Colors for output
