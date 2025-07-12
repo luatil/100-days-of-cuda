@@ -305,6 +305,10 @@ reading is also slow enough such that using the GPU becomes somewhat moot.
 If I am to continue with this approach of command line utilities I will
 need to find a better way of transmiting data through pipes.
 
+#### Day 41
+
+Exploration on convolution kernels
+
 ### Notes
 
 ### Compiling directly to ptx
