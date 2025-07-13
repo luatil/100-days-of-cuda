@@ -309,6 +309,32 @@ need to find a better way of transmiting data through pipes.
 
 Exploration on convolution kernels
 
+#### Day 42
+
+Spend some time looking at how to compile cuda code with CMake with a
+low success. Will need to pay more attention to the following video:
+
+https://www.nvidia.com/en-us/on-demand/session/gtc25-s72574/
+
+There is a lot here, like using all-major for target.
+
+Think I will try to convert the current build system to CMake
+just to test how things work. But I am having issues with the
+cuda-samples CMake files.
+
+Also watched a video on [How you should write a cuda c++ kernel](https://www.nvidia.com/en-us/on-demand/session/gtc25-s72575/)
+
+Not a lot of new information, but the speaker showed some cool tools
+that I should be able to use. Like NSight Compute and NVBench.
+
+I should keep a list of all of these tools.
+
+In the end I wrote a simpler version of the VectorSum kernel, where
+all of the generation, checking and printing is done with kernels.
+
+I think it looks even simpler than the traditional malloc on cpu =>
+cudaMemcpy dance of the most common examples.
+
 ### Notes
 
 ### Compiling directly to ptx
@@ -394,3 +420,4 @@ This could double down as a sort of learning path for SIMD on the CPU.
 - https://developer.nvidia.com/blog/understanding-ptx-the-assembly-language-of-cuda-gpu-computing/
 - https://kaixih.github.io/nvcc-options/
 - [Cuda Occupancy Calculator](https://xmartlabs.github.io/cuda-calculator/)
+- [Cuda Compiling](https://www.nvidia.com/en-us/on-demand/session/gtc25-s72574/)
