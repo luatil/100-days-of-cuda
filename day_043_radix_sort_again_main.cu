@@ -202,3 +202,83 @@ int main()
 // We can also notice that the number that starts the one sequence [3] is the number just
 // after the last one in the zero sequence [2].
 //
+// We can also try observing different properties of this, but let's consider the number of ones
+// before position I
+//
+// Input:  	0001 | 0011 | 0110 | 0101 | 0110 | 0001 | 1010 | 0111
+// Bit 0:    	  1  |  1   |  0   |  1   |  0   |  1   |  0   |  1
+// Excl (Bit 0):  0  |  1   |  2   |  2   |  3   |  3   |  4   |  4
+// Target:        3  |  4   |  0   |  5   |  1   |  6   |  2   |  7
+//
+// Not let's also add a repeated sequence of the number of 0's the number of 1's and the
+// total number of values:
+//
+// Input:  	0001 | 0011 | 0110 | 0101 | 0110 | 0001 | 1010 | 0111
+// Bit 0:    	  1  |  1   |  0   |  1   |  0   |  1   |  0   |  1
+// Excl (Bit 0):  0  |  1   |  2   |  2   |  3   |  3   |  4   |  4
+// #0's           3  |  3   |  3   |  3   |  3   |  3   |  3   |  3
+// #1's           5  |  5   |  5   |  5   |  5   |  5   |  5   |  5
+// Target:        3  |  4   |  0   |  5   |  1   |  6   |  2   |  7
+//
+// From this type of information we can see that the target position for when the
+// Bit 0 is one is equivalent to [Excl (Bit 0)] + [#0's].
+//
+// Now we need to find a pattern for the [Target] when [Bit 0] == 0.
+//
+// The idea here is that we also need to consider the index of input.
+//
+// Input:  	0001 | 0011 | 0110 | 0101 | 0110 | 0001 | 1010 | 0111
+// Index:         0  |  1   |  2   |  3   |  4   |  5   |  6   |  7
+// Bit 0:    	  1  |  1   |  0   |  1   |  0   |  1   |  0   |  1
+// Excl (Bit 0):  0  |  1   |  2   |  2   |  3   |  3   |  4   |  4
+// #0's           3  |  3   |  3   |  3   |  3   |  3   |  3   |  3
+// #1's           5  |  5   |  5   |  5   |  5   |  5   |  5   |  5
+// Target:        3  |  4   |  0   |  5   |  1   |  6   |  2   |  7
+//
+// Just by pattern matching we can identify that [Target] when [Bit 0] == 0 is equal to
+// [Index] - [Excl (Bit 0)]. This is because the [Target] position for a 0 element is
+// equal to the number of zeros before the element. And since we just have {0,1} as elements
+// The number of zeros before the element is equal to the number position of the element minus
+// the number of ones before the element. And since the number of ones before the element
+// is [Excl (Bit 0)] we have that [Target] == [Index] - [Excl (Bit 0)] when [Bit 0] == 0.
+//
+// Summarizing our findings we can them find the target position for each element by applying
+// the following:
+//
+// [[Bit 0] == 0] =>  [Target] == [Index] - [Excl (Bit 0)]
+// [[Bit 0] == 1] =>  [Target] == [#0's] + [Excl (Bit 0)]
+//
+// We now need to find a way of calculating the global [#0's]. Defining [N] as our
+// input size and [Excl (Bit 0)][I] as the number of ones before position [I] we can
+// find that [N] - [Excl (Bit 0)][N] is equal to [#0's]. Since [Excl (Bit 0)][N] counts
+// the [#1's] up to and excluding position [N]. What remains is [#0's].
+//
+// Therefore we can define our algorithm like:
+//
+//
+//
+//                 ┌────────────────────────────────┐
+//                 │                                │
+//                 │             Input              │
+//                 │                                │
+//                 └───────────────┬────────────────┘
+//                                 │
+//                                 │
+//                                 │
+//                 ┌───────────────▼────────────────┐
+//                 │                                │
+//       ┌─────────┼            Excl Scan           │
+//       │         │                                │
+//       ▼         └───────────────┬────────────────┘
+//    [#0's]                       │
+//       │                         │
+//       │                         │
+//       │         ┌───────────────▼────────────────┐
+//       │         │                                │
+//       └────────►│         Scatter Result         │
+//                 │                                │
+//                 └────────────────────────────────┘
+//
+//
+// Here [Excl Scan] also performs the map operation of [[Input][I] >> [Bit] & 1] before the sum.
+// With the detail that we need to calculate the [Excl Scan] for [N + 1] and not just [N].
