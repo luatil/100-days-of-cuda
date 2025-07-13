@@ -174,8 +174,6 @@ int main()
 // Since each iteration applies a stable sort, if we apply this procedure for each Bit [0, 31]
 // we will sort the entire array.
 //
-// Challenges:
-//
 // Histogramming and exclusive scan are well known parallel primitives. Therefore the main challenges
 // of implementing this algorithm in a GPU friendly way are composing these primitives in an efficient
 // way, and implementing the scatter operation. This operation looks sequential in nature, so at
@@ -255,8 +253,6 @@ int main()
 //
 // Therefore we can define our algorithm like:
 //
-//
-//
 //                 ┌────────────────────────────────┐
 //                 │                                │
 //                 │             Input              │
@@ -282,3 +278,5 @@ int main()
 //
 // Here [Excl Scan] also performs the map operation of [[Input][I] >> [Bit] & 1] before the sum.
 // With the detail that we need to calculate the [Excl Scan] for [N + 1] and not just [N].
+//
+// And by applying this operation for each [Bit] of the [Input]. We can sort the entire array.
