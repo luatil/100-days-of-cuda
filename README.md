@@ -414,6 +414,11 @@ between systems that have or don't have GPUS.
 
 This could double down as a sort of learning path for SIMD on the CPU.
 
+### Tools:
+
+- nvcc
+- ncu
+- nvbandwith
 
 ### Resources:
 
