@@ -335,6 +335,24 @@ all of the generation, checking and printing is done with kernels.
 I think it looks even simpler than the traditional malloc on cpu =>
 cudaMemcpy dance of the most common examples.
 
+#### Day 43
+
+Worked more on properly understanding the RadixSort algorithm.
+Think I finally understood it. The algorithm is heavily based
+on exclusive scan. So I spend more time trying to understand
+the adjacent syncronization - domino-style - prefix sum
+implementation.
+
+The chapter on PMPP is somewhat lacking on this implementation,
+leaving a lot of exercise to the reader. Well, it was a work out.
+Next steps for exclusive sum I think is the NVIDIA paper on SOTA
+algorithm for prefix sum.
+
+This domino-style algorithm is quite interesting, but I don't think
+it is so trivial to identify why it would be faster than using
+a large block size + iteration. Likely has to do with memory
+bandwith.
+
 ### Notes
 
 ### Compiling directly to ptx
