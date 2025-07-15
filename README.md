@@ -353,6 +353,18 @@ it is so trivial to identify why it would be faster than using
 a large block size + iteration. Likely has to do with memory
 bandwith.
 
+#### Day 44
+
+Finally got an working implementation of RadixSort, for the first bit...
+But we are _so_ _so_ very close of a full implementation.
+
+Implemented the algorithm in google sheets, and got to see better
+the full flow of the code.
+
+Forgot how useful spreadshets can be for this type of problem
+solving. A wild Mike Acton whispers "Just look at the data".
+
+
 ### Notes
 
 ### Compiling directly to ptx
