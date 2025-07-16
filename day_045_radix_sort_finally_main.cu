@@ -16,7 +16,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-#define MAX_VALUE (1 << 24)
+#define MAX_VALUE 100000000
 #define CUDA_CHECK(call)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \

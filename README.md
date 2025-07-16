@@ -364,12 +364,33 @@ the full flow of the code.
 Forgot how useful spreadshets can be for this type of problem
 solving. A wild Mike Acton whispers "Just look at the data".
 
-
 #### Day 45
 
-Got a working implementation of RadixSort for small inputs.
-Still have a bug on large inputs though.
+Got a working implementation of RadixSort that actually works, was able to
+sort 848Mb with a ~5x speedup over coreutils sort. Which was quite nice.
 
+Still too slow for LeetGPU for some reason. I am still using a somewhat
+slow version of the core kernel though - kogge-stone.
+
+Just checked that no one was able to solve this in LeetGPU yet. Oh well.
+
+Will probably need to create a better benchmark to check the perfomance
+of different kernel primitives.
+
+Started benchmarking with `pv`.
+
+```bash
+seq 1 100000000 | shuf > temp.txt
+time pv temp.txt | sort -n > sorted_cpu.txt
+cat sorted_cpu | sorted
+
+time pv temp.txt | rsort > sorted_gpu.txt
+cat sorted_gpu | sorted
+```
+`sorted` is a simple CLI I wrote to check if a stream
+of unsigned integers is sorted or not.
+
+Each one of these files is ~848Mb.
 
 ### Notes
 
