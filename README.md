@@ -365,6 +365,12 @@ Forgot how useful spreadshets can be for this type of problem
 solving. A wild Mike Acton whispers "Just look at the data".
 
 
+#### Day 45
+
+Got a working implementation of RadixSort for small inputs.
+Still have a bug on large inputs though.
+
+
 ### Notes
 
 ### Compiling directly to ptx

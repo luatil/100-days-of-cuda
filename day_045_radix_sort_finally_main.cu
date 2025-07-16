@@ -135,24 +135,24 @@ template <int BLOCK_DIM = 256> static void ExclusiveSum(const unsigned int *XS, 
     unsigned int *Flags, *ScanValue, *BlockCounter, *ExclusiveSumResult;
     unsigned int *Input;
 
-    CUDA_CHECK(cudaMalloc(&Flags, sizeof(int) * (GridDim.x + 1)));
-    CUDA_CHECK(cudaMalloc(&ScanValue, sizeof(int) * (GridDim.x + 1)));
-    CUDA_CHECK(cudaMalloc(&BlockCounter, sizeof(int)));
-    CUDA_CHECK(cudaMalloc(&ExclusiveSumResult, sizeof(int) * (N + 1))); // Have to compute number of zeros
-    CUDA_CHECK(cudaMalloc(&Input, sizeof(int) * N));
-    CUDA_CHECK(cudaMemcpy(Input, XS, sizeof(int) * N, cudaMemcpyDeviceToDevice));
+    CUDA_CHECK(cudaMalloc(&Flags, sizeof(unsigned int) * (GridDim.x + 1)));
+    CUDA_CHECK(cudaMalloc(&ScanValue, sizeof(unsigned int) * (GridDim.x + 1)));
+    CUDA_CHECK(cudaMalloc(&BlockCounter, sizeof(unsigned int)));
+    CUDA_CHECK(cudaMalloc(&ExclusiveSumResult, sizeof(unsigned int) * (N + 1))); // Have to compute number of zeros
+    CUDA_CHECK(cudaMalloc(&Input, sizeof(unsigned int) * N));
+    CUDA_CHECK(cudaMemcpy(Input, XS, sizeof(unsigned int) * N, cudaMemcpyDeviceToDevice));
 
     for (int Bit = 0; Bit < 32; Bit++)
     {
         // Initialize all of the memory
-        CUDA_CHECK(cudaMemset(Flags, 0, sizeof(int) * (GridDim.x + 1)));
-        CUDA_CHECK(cudaMemset(ScanValue, 0, sizeof(int) * (GridDim.x + 1)));
-        CUDA_CHECK(cudaMemset(BlockCounter, 0, sizeof(int)));
-        CUDA_CHECK(cudaMemset(ExclusiveSumResult, 0, sizeof(int) * (N + 1)));
+        CUDA_CHECK(cudaMemset(Flags, 0, sizeof(unsigned int) * (GridDim.x + 1)));
+        CUDA_CHECK(cudaMemset(ScanValue, 0, sizeof(unsigned int) * (GridDim.x + 1)));
+        CUDA_CHECK(cudaMemset(BlockCounter, 0, sizeof(unsigned int)));
+        CUDA_CHECK(cudaMemset(ExclusiveSumResult, 0, sizeof(unsigned int) * (N + 1)));
 
         // Set first flag to 1 to allow first block to proceed
-        int One = 1;
-        CUDA_CHECK(cudaMemcpy(&Flags[0], &One, sizeof(int), cudaMemcpyHostToDevice));
+        unsigned int One = 1;
+        CUDA_CHECK(cudaMemcpy(&Flags[0], &One, sizeof(unsigned int), cudaMemcpyHostToDevice));
 
         ExclusiveSumKernel<BLOCK_DIM>
             <<<GridDim, BlockDim>>>(Input, ExclusiveSumResult, BlockCounter, Flags, ScanValue, Bit, N);
@@ -160,7 +160,9 @@ template <int BLOCK_DIM = 256> static void ExclusiveSum(const unsigned int *XS, 
 
         Swap(&Input, &Output);
     }
-    // Swap(&Input, &Output);
+
+    // After 32 iterations, result is in Input, copy to Output
+    CUDA_CHECK(cudaMemcpy(Output, Input, sizeof(unsigned int) * N, cudaMemcpyDeviceToDevice));
     CUDA_CHECK(cudaDeviceSynchronize());
 
     CUDA_CHECK(cudaFree(ExclusiveSumResult));
@@ -190,14 +192,15 @@ int main()
     }
 
     unsigned int *DeviceLines, *Output;
-    CUDA_CHECK(cudaMalloc(&DeviceLines, sizeof(int) * LineIter));
-    CUDA_CHECK(cudaMalloc(&Output, sizeof(int) * LineIter)); // Have to reserve space for number of zeros
-    CUDA_CHECK(cudaMemcpy(DeviceLines, Lines, sizeof(int) * LineIter, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMalloc(&DeviceLines, sizeof(unsigned int) * LineIter));
+    CUDA_CHECK(cudaMalloc(&Output, sizeof(unsigned int) * LineIter)); // Have to reserve space for number of zeros
+    CUDA_CHECK(cudaMemcpy(DeviceLines, Lines, sizeof(unsigned int) * LineIter, cudaMemcpyHostToDevice));
 
     ExclusiveSum(DeviceLines, Output, LineIter);
 
-    CUDA_CHECK(cudaMemcpy(Lines, Output, sizeof(int) * LineIter, cudaMemcpyDeviceToHost));
+    CUDA_CHECK(cudaMemcpy(Lines, Output, sizeof(unsigned int) * LineIter, cudaMemcpyDeviceToHost));
     CUDA_CHECK(cudaFree(DeviceLines));
+    CUDA_CHECK(cudaFree(Output));
 
     for (unsigned int I = 0; I < LineIter; I++)
     {
