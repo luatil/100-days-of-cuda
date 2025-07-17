@@ -379,6 +379,7 @@ of different kernel primitives.
 
 Started benchmarking with `pv`.
 
+
 ```bash
 seq 1 100000000 | shuf > temp.txt
 time pv temp.txt | sort -n > sorted_cpu.txt
@@ -391,6 +392,18 @@ cat sorted_gpu | sorted
 of unsigned integers is sorted or not.
 
 Each one of these files is ~848Mb.
+
+#### Day 46
+
+Ran `nvbench_demo` and created a simple vector_add benchmark
+for different block_sizes.
+
+Very little difference for block_sizes in `[128, 1024]` in powers
+of two. `1024` is slightly worse than the others.
+
+Had some trouble plotting the results with different software,
+but learned how to use duckdb-ui to work with the data, which
+is quite nice.
 
 ### Notes
 
