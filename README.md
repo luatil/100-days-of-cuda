@@ -405,6 +405,99 @@ Had some trouble plotting the results with different software,
 but learned how to use duckdb-ui to work with the data, which
 is quite nice.
 
+#### Day 47
+
+Figured out why I was having so much trouble with building `nvbench_demo`  
+and `nvbench`. Turns out my system has a `/usr/bin/c++` which is
+being found by default on CMake and it is `gcc-15`. 
+
+My system libraries, tough, are not compiled with this version of
+`gcc-15`. So I was having issues with linking because of this.
+
+I am in a better mood today than yesterday, so I actually took
+the time to understand the problem and (re)-learn some stuff.
+
+First, I was getting this error:
+
+```
+/usr/bin/ld: ../lib/libnvbench.so: undefined reference to `__cxa_call_terminate'
+```
+
+Both when running `make` after `CMake` and in `nvbench_demo` and `nvbench`.
+
+After some unfruitful googling around, I decided to actually use the tools
+to debug this problem.
+
+First thing was trying to understand where did this come from.
+
+I've did google+llm it to figure it out. But I think a retcon gives a
+better story.
+
+So first we need to understand what this weird symbol `__cxa_call_terminate`
+means. Where does this `__cxa` prefix comes from.
+
+Apparently there is a convention on this symbols where:
+
+- __cxa_*     = C++ ABI (Application Binary Interface) 
+- __gnu_*     = GNU-specific extensions
+- __glibc_*   = GNU C library
+- _Z*         = C++ mangled names
+
+But do some research before quoting me on this.
+
+```
+# ldd lib/libnvbench.so
+[...]
+libstdc++.so.6 => /lib64/libstdc++.so.6 (0x0000735bfc200000)
+```
+
+Showed a library that would likely point out to this symbol.
+
+The followed two commands then revelead the issue:
+
+```
+nm -D lib/libnvbench.so | grep __cxa_call_terminate
+# Result: U __cxa_call_terminate (undefined)
+
+nm -D /lib64/libstdc++.so.6 | grep __cxa_call_terminate  
+# Result: __cxa_call_terminate@@CXXABI_1.3.15 (versioned symbol)
+```
+
+This showed a symbol versioning mismatch: the library expected an
+unversioned symbol, but the system provided a versioned one.
+
+But the root cause was actually a different one:
+
+```
+grep -i compiler CMakeCache.txt
+# Showed: CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++
+
+/usr/bin/c++ --version  # GCC 15.1.1
+g++ --version           # GCC 13.3.1
+```
+
+By default `CMAKE_CXX_COMPILER` was being defined to
+`/usr/bin/c++`, while the library was 
+
+In the end the - arguably partial - solution was to run the following
+command instead:
+
+```
+cmake -DCMAKE_CUDA_ARCHITECTURES=native -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc ..
+```
+
+This way both the system libs and `nvbench` would be built using the
+same compiler.
+
+Some misteries, tough, still remain. Why was `g++15` imcompatible with
+the system libraries? Why `/usr/bin/c++` does not match `g++`? 
+Why `CMake` did not found the right compiler?
+
+Will we ever know?
+
+And I guess debugging CMake errors is part of the overall CUDA experience.
+amirite?
+
 ### Notes
 
 ### Compiling directly to ptx
