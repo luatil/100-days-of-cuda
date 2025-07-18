@@ -11,3 +11,6 @@ CPMAddPackage("gh:NVIDIA/nvbench#main")
 
 add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 target_link_libraries(vector_add_bench nvbench::main)
+
+add_executable(prefix_sum_bench day_047_prefix_sum_bench_main.cu)
+target_link_libraries(prefix_sum_bench nvbench::main)
