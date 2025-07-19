@@ -498,6 +498,15 @@ Will we ever know?
 And I guess debugging CMake errors is part of the overall CUDA experience.
 amirite?
 
+#### Day 48
+
+Used my new NVBench compiling skills to write a
+prefix sum benchmark.
+
+#### Day 49
+
+Wrote a RadixSort Kernel for floating point (f32).
+
 ### Notes
 
 ### Compiling directly to ptx
