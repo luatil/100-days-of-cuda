@@ -2,6 +2,8 @@ CompileFlags:
   Add:
     - -I/usr/local/cuda/include
     - -I/usr/local/cuda/extras/CUPTI/include
+    - -Ibuild/_deps/nvbench-src
+    - -Ibuild/_deps/nvbench-src/nvbench
     - -L/usr/local/cuda/lib64
     - -L/usr/local/cuda/extras/CUPTI/lib64
     - -lcuda

@@ -18,6 +18,9 @@ target_link_libraries(vector_add_bench nvbench::main)
 add_executable(prefix_sum_bench day_047_prefix_sum_bench_main.cu)
 target_link_libraries(prefix_sum_bench nvbench::main)
 
+add_executable(reduction_bench day_048_reduction_benchmark_main.cu)
+target_link_libraries(reduction_bench nvbench::main)
+
 add_executable(rsort day_045_radix_sort_finally_main.cu)
 
 # this needs to come after add_executable
