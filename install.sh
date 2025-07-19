@@ -25,8 +25,10 @@ APPLICATIONS=(
     # "day_043_is_sorted_main.cu:sorted"
     # "day_043_exclusive_sum_main.cu:esum"
     # "day_044_print_binary_main.cu:pbin"
-    "day_045_radix_sort_finally_main.cu:rsort"
-    "day_045_improvements_on_issorted_main.cu:sorted"
+    #"day_045_radix_sort_finally_main.cu:rsort"
+    "day_049_rsortf_main.cu:rsortf"
+    "day_049_fseq_main.cu:fseq"
+    #"day_045_improvements_on_issorted_main.cu:sorted"
 )
 
 # Colors for output
