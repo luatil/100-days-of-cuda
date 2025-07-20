@@ -500,8 +500,7 @@ amirite?
 
 #### Day 48
 
-Used my new NVBench compiling skills to write a
-prefix sum benchmark.
+Used my new NVBench compiling skills to write a prefix sum benchmark.
 
 #### Day 49
 
@@ -509,8 +508,8 @@ Wrote a RadixSort Kernel for floating point (f32).
 
 #### Day 50
 
-Wrote a CLI tool for generating
-
+Wrote a CLI tool for generating a circle with a SDF. The circle generation
+and SDF are implemented using a Kernel.
 
 
 ### Notes
