@@ -1,11 +1,57 @@
+/*
+ * NAME
+ * 	circlesdf - renders a circle using a signed distance function
+ *
+ * SYNOPSIS
+ * 	circlesdf [OPTION]...
+ *
+ * DESCRIPTION
+ * 	Renders a circle using CUDA and signed distance field (SDF) technique.
+ * 	Outputs the result as a JPEG image with anti-aliased edges.
+ *
+ * 	-w, --width=WIDTH
+ * 		set image width in pixels (default: 400)
+ *
+ * 	-h, --height=HEIGHT
+ * 		set image height in pixels (default: 400)
+ *
+ * 	-o, --output-filename=FILE
+ * 		output filename for the generated image (default: temp.jpg)
+ *
+ * 	-x, --cx=X
+ * 		circle center X coordinate (default: 200)
+ *
+ * 	-y, --cy=Y
+ * 		circle center Y coordinate (default: 200)
+ *
+ * 	-r, --radius=R
+ * 		circle radius in pixels (default: 100)
+ *
+ * 	--help
+ * 		display this help and exit
+ *
+ */
 #include <cmath>
+#include <getopt.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "day_003_vendor_libraries.h"
 
 typedef unsigned int u32;
 typedef unsigned char u8;
 typedef float f32;
+typedef int s32;
+
+typedef struct
+{
+    int Width;
+    int Height;
+    char *OutputFilename;
+    int CircleX;
+    int CircleY;
+    int Radius;
+} options;
 
 template <typename T> T __device__ __host__ SquareRoot(T X)
 {
@@ -32,8 +78,6 @@ __device__ __host__ f32 SmoothStep(f32 Edge0, f32 Edge1, f32 X)
 
     return X * X * (3.0f - 2.0f * X);
 }
-
-typedef int s32;
 template <typename T> struct vec2
 {
     T X;
@@ -135,6 +179,85 @@ template <typename T> __device__ __host__ T CircleSDF(vec2<T> P, vec2<T> C, T R)
     return Distance(P, C) - R;
 }
 
+static void PrintUsage(const char *ProgramName)
+{
+    printf("Usage: %s [OPTION]...\n", ProgramName);
+    printf("Renders a circle using CUDA and signed distance field (SDF) technique.\n");
+    printf("Outputs the result as a JPEG image with anti-aliased edges.\n\n");
+    printf("Options:\n");
+    printf("  -w, --width=WIDTH          set image width in pixels (default: 400)\n");
+    printf("  -h, --height=HEIGHT        set image height in pixels (default: 400)\n");
+    printf("  -o, --output-filename=FILE output filename (default: temp.jpg)\n");
+    printf("  -x, --cx=X                 circle center X coordinate (default: 200)\n");
+    printf("  -y, --cy=Y                 circle center Y coordinate (default: 200)\n");
+    printf("  -r, --radius=R             circle radius in pixels (default: 100)\n");
+    printf("      --help                 display this help and exit\n");
+}
+
+static options ParseCommandLine(int ArgumentCount, char *Arguments[])
+{
+    options Opts = {400, 400, (char *)"temp.jpg", 200, 200, 100};
+
+    static struct option LongOptions[] = {{"width", required_argument, 0, 'w'},
+                                          {"height", required_argument, 0, 'h'},
+                                          {"output-filename", required_argument, 0, 'o'},
+                                          {"cx", required_argument, 0, 'x'},
+                                          {"cy", required_argument, 0, 'y'},
+                                          {"radius", required_argument, 0, 'r'},
+                                          {"help", no_argument, 0, '?'},
+                                          {0, 0, 0, 0}};
+
+    int OptionIndex = 0;
+    int Char;
+
+    while ((Char = getopt_long(ArgumentCount, Arguments, "w:h:o:x:y:r:", LongOptions, &OptionIndex)) != -1)
+    {
+        switch (Char)
+        {
+        case 'w':
+            Opts.Width = atoi(optarg);
+            if (Opts.Width <= 0)
+            {
+                fprintf(stderr, "Error: Width must be positive\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'h':
+            Opts.Height = atoi(optarg);
+            if (Opts.Height <= 0)
+            {
+                fprintf(stderr, "Error: Height must be positive\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'o':
+            Opts.OutputFilename = optarg;
+            break;
+        case 'x':
+            Opts.CircleX = atoi(optarg);
+            break;
+        case 'y':
+            Opts.CircleY = atoi(optarg);
+            break;
+        case 'r':
+            Opts.Radius = atoi(optarg);
+            if (Opts.Radius <= 0)
+            {
+                fprintf(stderr, "Error: Radius must be positive\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case '?':
+        default:
+            PrintUsage(Arguments[0]);
+            exit(EXIT_SUCCESS);
+            break;
+        }
+    }
+
+    return Opts;
+}
+
 __global__ void DrawCircle(u8 *Image, vec2<s32> Circle, s32 Radius, u32 Width, u32 Height)
 {
     s32 Row = blockDim.y * blockIdx.y + threadIdx.y;
@@ -150,26 +273,26 @@ __global__ void DrawCircle(u8 *Image, vec2<s32> Circle, s32 Radius, u32 Width, u
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    s32 Width = 400;
-    s32 Height = 800;
+    options Opts = ParseCommandLine(argc, argv);
 
     u8 *d_Image;
 
-    cudaMalloc(&d_Image, sizeof(u8) * Width * Height);
+    cudaMalloc(&d_Image, sizeof(u8) * Opts.Width * Opts.Height);
 
     dim3 BlockDim(16, 16);
-    dim3 GridDim((Width + 16 - 1) / 16, (Height + 16 - 1) / 16);
+    dim3 GridDim((Opts.Width + 16 - 1) / 16, (Opts.Height + 16 - 1) / 16);
 
-    vec2<s32> Circle{200, 200};
-    s32 Radius = 100;
+    vec2<s32> Circle{Opts.CircleX, Opts.CircleY};
 
-    DrawCircle<<<GridDim, BlockDim>>>(d_Image, Circle, Radius, Width, Height);
+    DrawCircle<<<GridDim, BlockDim>>>(d_Image, Circle, Opts.Radius, Opts.Width, Opts.Height);
 
-    u8 *Image = (u8 *)malloc(sizeof(u8) * Width * Height);
-    cudaMemcpy(Image, d_Image, sizeof(u8) * Width * Height, cudaMemcpyDeviceToHost);
+    u8 *Image = (u8 *)malloc(sizeof(u8) * Opts.Width * Opts.Height);
+    cudaMemcpy(Image, d_Image, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
 
-    const char *OutFilename = "temp.jpg";
-    stbi_write_jpg(OutFilename, Width, Height, 1, Image, 100);
+    stbi_write_jpg(Opts.OutputFilename, Opts.Width, Opts.Height, 1, Image, 100);
+
+    free(Image);
+    cudaFree(d_Image);
 }
