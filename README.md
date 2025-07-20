@@ -407,9 +407,9 @@ is quite nice.
 
 #### Day 47
 
-Figured out why I was having so much trouble with building `nvbench_demo`  
+Figured out why I was having so much trouble with building `nvbench_demo`
 and `nvbench`. Turns out my system has a `/usr/bin/c++` which is
-being found by default on CMake and it is `gcc-15`. 
+being found by default on CMake and it is `gcc-15`.
 
 My system libraries, tough, are not compiled with this version of
 `gcc-15`. So I was having issues with linking because of this.
@@ -438,7 +438,7 @@ means. Where does this `__cxa` prefix comes from.
 
 Apparently there is a convention on this symbols where:
 
-- __cxa_*     = C++ ABI (Application Binary Interface) 
+- __cxa_*     = C++ ABI (Application Binary Interface)
 - __gnu_*     = GNU-specific extensions
 - __glibc_*   = GNU C library
 - _Z*         = C++ mangled names
@@ -459,7 +459,7 @@ The followed two commands then revelead the issue:
 nm -D lib/libnvbench.so | grep __cxa_call_terminate
 # Result: U __cxa_call_terminate (undefined)
 
-nm -D /lib64/libstdc++.so.6 | grep __cxa_call_terminate  
+nm -D /lib64/libstdc++.so.6 | grep __cxa_call_terminate
 # Result: __cxa_call_terminate@@CXXABI_1.3.15 (versioned symbol)
 ```
 
@@ -477,7 +477,7 @@ g++ --version           # GCC 13.3.1
 ```
 
 By default `CMAKE_CXX_COMPILER` was being defined to
-`/usr/bin/c++`, while the library was 
+`/usr/bin/c++`, while the library was
 
 In the end the - arguably partial - solution was to run the following
 command instead:
@@ -490,7 +490,7 @@ This way both the system libs and `nvbench` would be built using the
 same compiler.
 
 Some misteries, tough, still remain. Why was `g++15` imcompatible with
-the system libraries? Why `/usr/bin/c++` does not match `g++`? 
+the system libraries? Why `/usr/bin/c++` does not match `g++`?
 Why `CMake` did not found the right compiler?
 
 Will we ever know?
@@ -506,6 +506,12 @@ prefix sum benchmark.
 #### Day 49
 
 Wrote a RadixSort Kernel for floating point (f32).
+
+#### Day 50
+
+Wrote a CLI tool for generating
+
+
 
 ### Notes
 
