@@ -28,7 +28,8 @@ APPLICATIONS=(
     #"day_045_radix_sort_finally_main.cu:rsort"
     # "day_049_rsortf_main.cu:rsortf"
     # "day_049_fseq_main.cu:fseq"
-    "day_050_circle_sdf_main.cu:circlesdf"
+    # "day_050_circle_sdf_main.cu:circlesdf"
+    "day_051_raytracer_001_main.cu:raytracer"
     #"day_045_improvements_on_issorted_main.cu:sorted"
 )
 
