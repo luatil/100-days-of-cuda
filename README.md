@@ -511,6 +511,23 @@ Wrote a RadixSort Kernel for floating point (f32).
 Wrote a CLI tool for generating a circle with a SDF. The circle generation
 and SDF are implemented using a Kernel.
 
+#### Day 51
+
+Updated the CLI tool to generate line drawings following the line segment
+SDF. Thanks Inigo.
+
+The goal of being able to draw both Circles and LineSegments is to be
+able to draw a simple RayTracer from a top down view.
+
+Thinking of doing it through a tagged union drawable kinda of thing.
+It needs to be sorted to avoid thread divergence, but I still think
+it is better than launching two kernels to do it.
+
+I think I need to `debug` this intuition on launching two kernels.
+I am not sure how bad of problem it is with CudaGraphs.
+
+I believe the problem is that launching multiple kernels require
+multiple accesses to main memory.
 
 ### Notes
 
