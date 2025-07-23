@@ -29,7 +29,8 @@ APPLICATIONS=(
     # "day_049_rsortf_main.cu:rsortf"
     # "day_049_fseq_main.cu:fseq"
     # "day_050_circle_sdf_main.cu:circlesdf"
-    "day_051_raytracer_001_main.cu:raytracer"
+    # "day_051_raytracer_001_main.cu:raytracer"
+    "day_052_raytracer_002_main_1.cu:raytracer"
     #"day_045_improvements_on_issorted_main.cu:sorted"
 )
 
