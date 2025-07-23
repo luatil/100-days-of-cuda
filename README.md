@@ -529,6 +529,15 @@ I am not sure how bad of problem it is with CudaGraphs.
 I believe the problem is that launching multiple kernels require
 multiple accesses to main memory.
 
+#### Day 52
+
+Started worked on composing the DrawLine and DrawCircle
+function through the use of AlphaBlending.
+
+But I still need to remember all of this shaping functions
+and shader style programming. Think I would've remembered
+more of it.
+
 ### Notes
 
 ### Compiling directly to ptx
