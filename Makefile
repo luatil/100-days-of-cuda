@@ -2,7 +2,7 @@
 DEBUG_ENABLED = 1
 ################################
 
-build/raytracer_dn: day_052_raytracer_002_main_1.cu
+build/raytracer_dn: day_053_raytracer_003_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o "./build/raytracer_dn"  -lcupti -lcuda
 
 ~/.local/bin/raytracer: build/raytracer_dn
@@ -12,7 +12,7 @@ raytracer: ~/.local/bin/raytracer
 .PHONY: raytracer
 
 temp.jpg: raytracer
-	raytracer --width 400 --height 400
+	raytracer --width 800 --height 800
 
 view: temp.jpg
 	xdg-open temp.jpg
