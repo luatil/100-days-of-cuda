@@ -194,24 +194,11 @@ static void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrim
     for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
     {
         vec2<f32> Center = {RandomFloat(0.1f, 0.9f), RandomFloat(0.1f, 0.9f)};
-        f32 Radius = RandomFloat(0.02f, 0.05f);
-        u8 Color = RandomColor();
+        f32 Radius = RandomFloat(0.02f, 0.03f);
+        u8 Color = RandomColor(10, 250);
 
         CircleCenters[i] = Center;
         Primitives[Count++] = CreateCircle(Center, Radius, Color);
-    }
-
-    u32 NumConnections = NumCircles + rand() % NumCircles;
-    for (u32 i = 0; i < NumConnections && Count < MaxPrimitives; i++)
-    {
-        u32 Index1 = rand() % NumCircles;
-        u32 Index2 = rand() % NumCircles;
-
-        if (Index1 != Index2)
-        {
-            u8 LineColor = RandomColor();
-            Primitives[Count++] = CreateLine(CircleCenters[Index1], CircleCenters[Index2], LineColor);
-        }
     }
 
     free(CircleCenters);
@@ -230,7 +217,7 @@ int main(int argc, char *argv[])
     primitive *Primitives = (primitive *)malloc(sizeof(primitive) * MaxPrimitives);
     u32 PrimitiveCount = 0;
 
-    u32 NumCircles = 64;
+    u32 NumCircles = 256;
     GenerateRandomCircles(Primitives, PrimitiveCount, MaxPrimitives, NumCircles);
 
     primitive *d_Primitives;

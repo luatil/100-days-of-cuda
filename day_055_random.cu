@@ -13,4 +13,9 @@ static u8 RandomColor()
     return (u8)(100 + rand() % 156);
 }
 
+static u8 RandomColor(u8 Min, u8 Max)
+{
+    return (u8)Min + rand() % (Max - Min + 1);
+}
+
 #endif
