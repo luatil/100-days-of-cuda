@@ -15,7 +15,7 @@ raytracer: ~/.local/bin/raytracer
 .PHONY: raytracer
 
 temp.jpg: raytracer
-	raytracer --width 800 --height 800
+	raytracer --width 1024 --height 1024
 
 view: temp.jpg
 	xdg-open temp.jpg

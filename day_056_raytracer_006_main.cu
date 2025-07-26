@@ -77,6 +77,7 @@ struct image
         u8 *Image = (u8 *)malloc(sizeof(u8) * m_Width * m_Height);
         cudaMemcpy(Image, m_Data, sizeof(u8) * m_Width * m_Height, cudaMemcpyDeviceToHost);
         stbi_write_jpg(Filename, m_Width, m_Height, 1, Image, 100);
+        // stbi_write_png(Filename, m_Width, m_Height, 1, Image, m_Width);
         free(Image);
     }
 
@@ -222,7 +223,7 @@ int main(int argc, char *argv[])
 
     image Image(Opts.Width, Opts.Height);
 
-    u32 MaxPrimitives = 1024;
+    u32 MaxPrimitives = 1024*1024;
     primitive *Primitives = (primitive *)malloc(sizeof(primitive) * MaxPrimitives);
     u32 PrimitiveCount = 0;
 
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
     PrimitiveCount++;
     Primitives[0] = Circle1;
 
-    u32 NumberOfRays = 200;
+    u32 NumberOfRays = 256;
     for (u32 I = 0; I < NumberOfRays; I++)
     {
         f32 Angle = (2 * PI / NumberOfRays) * I;
@@ -241,8 +242,11 @@ int main(int argc, char *argv[])
         f32 Y = sinf(Angle);
         ray Ray{Circle1.Circle.Center, {X, Y}};
         // Put a Line from a ray
-        primitive Line = LineFromRay(Ray, 100, 0.001f);
-        Primitives[PrimitiveCount++] = Line;
+        if (I % 1 == 0)
+        {
+            primitive Line = LineFromRay(Ray, 100, 0.001f);
+            Primitives[PrimitiveCount++] = Line;
+        }
     }
 
     primitive *d_Primitives;
