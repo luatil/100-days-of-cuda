@@ -5,7 +5,7 @@ DEBUG_ENABLED = 1
 # all: view
 all: temp.jpg
 
-build/raytracer_dn: day_055_raytracer_005_main.cu
+build/raytracer_dn: day_056_raytracer_006_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o "./build/raytracer_dn"  -lcupti -lcuda
 
 ~/.local/bin/raytracer: build/raytracer_dn
