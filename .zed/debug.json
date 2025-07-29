@@ -6,10 +6,10 @@
   {
     "label": "Build & Debug native binary",
     "build": {
-      "command": "./build.sh",
-      "args": ["22"]
+      "command": "make",
+      "args": [""]
     },
-    "program": "$ZED_WORKTREE_ROOT/build/day_022_prefix_sum_main.cu_dn",
+    "program": "$ZED_WORKTREE_ROOT/build/convolution_dn",
     "request": "launch",
     "adapter": "GDB" // GDB is available on non arm macs as well as linux
   }

@@ -3,7 +3,7 @@ DEBUG_ENABLED = 1
 ################################
 
 # all: view
-all: temp.jpg
+all: result.txt
 
 build/raytracer_dn: day_056_raytracer_006_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o "./build/raytracer_dn"  -lcupti -lcuda
@@ -11,8 +11,11 @@ build/raytracer_dn: day_056_raytracer_006_main.cu
 build/day_057_dn: day_057_add_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_057_dn
-	time build/day_057_dn > result.txt
+build/convolution_dn: day_058_convolution.cu
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/convolution_dn
+	time build/convolution_dn > result.txt
 
 test: result.txt
 	diff result.txt goal.txt

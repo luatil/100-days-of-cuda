@@ -49,10 +49,10 @@
   },
   {
     "label": "Task 2",
-    "command": "make temp.jpg",
+    "command": "make",
     "reveal": "never",
     "reveal_target": "dock",
-    "hide": "always",
+    "hide": "on_success",
     "shell": "system",
     "tags": ["something"]
   }
