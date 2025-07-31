@@ -14,8 +14,11 @@ build/day_057_dn: day_057_add_main.cu
 build/convolution_dn: day_058_convolution.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/convolution_dn
-	time build/convolution_dn > result.txt
+build/tensor_test_dn: day_060_tensor_lib_test_main.cu
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/tensor_test_dn
+	build/tensor_test_dn
 
 test: result.txt
 	diff result.txt goal.txt
