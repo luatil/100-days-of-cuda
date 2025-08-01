@@ -17,8 +17,11 @@ build/convolution_dn: day_058_convolution.cu
 build/tensor_test_dn: day_060_tensor_lib_test_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/tensor_test_dn
-	build/tensor_test_dn
+build/mandelbrot_cli_dn: day_061_mandelbrot_cli.cu
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/mandelbrot_cli_dn
+	build/mandelbrot_cli_dn
 
 test: result.txt
 	diff result.txt goal.txt
