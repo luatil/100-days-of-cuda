@@ -80,46 +80,46 @@ void solve(const float *A, const float *B, float *result, int N)
 #define BLOCK_DIM 512
 #define COARSE_FACTOR 4
 
-__global__ void Kernel_DotProduct_02(const float *A, const float *B, float *result, int N)
+__global__ void KernelDotProduct02(const float *A, const float *B, float *Result, int N)
 {
     __shared__ float SharedMem[BLOCK_DIM];
 
-    int tid = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
-    int tx = threadIdx.x;
+    int Tid = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
+    int Tx = threadIdx.x;
 
     // ThreadCoarsening
     float Sum = 0.0f;
-    for (int i = 0; i < COARSE_FACTOR; i++)
+    for (int I = 0; I < COARSE_FACTOR; I++)
     {
-        int pos = tid + blockDim.x * i;
-        if (pos < N)
+        int Pos = Tid + blockDim.x * I;
+        if (Pos < N)
         {
-            Sum += A[pos] * B[pos];
+            Sum += A[Pos] * B[Pos];
         }
     }
-    SharedMem[tx] = Sum;
+    SharedMem[Tx] = Sum;
     __syncthreads();
 
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
 
-        if (tx < s)
+        if (Tx < S)
         {
-            SharedMem[tx] += SharedMem[tx + s];
+            SharedMem[Tx] += SharedMem[Tx + S];
         }
         __syncthreads();
     }
 
-    if (tx == 0)
+    if (Tx == 0)
     {
-        atomicAdd(result, SharedMem[0]);
+        atomicAdd(Result, SharedMem[0]);
     }
 }
 
-void solve(const float *A, const float *B, float *result, int N)
+void Solve(const float *A, const float *B, float *Result, int N)
 {
     int GridDim = (N + (BLOCK_DIM * COARSE_FACTOR) - 1) / (BLOCK_DIM * COARSE_FACTOR);
-    Kernel_DotProduct_02<<<GridDim, BLOCK_DIM>>>(A, B, result, N);
+    KernelDotProduct02<<<GridDim, BLOCK_DIM>>>(A, B, Result, N);
 }
 #endif
 

@@ -9,14 +9,14 @@ struct cuda_profile_block
     cudaEvent_t Start;
     cudaEvent_t Stop;
 
-    cuda_profile_block(const char *Label_, u32 GlobalIndex_)
+    cuda_profile_block(const char *Label, u32 GlobalIndex)
     {
         cudaEventCreate(&Start);
         cudaEventCreate(&Stop);
         cudaEventRecord(Start);
 
-        Label = Label_;
-        GlobalIndex = GlobalIndex_;
+        Label = Label;
+        GlobalIndex = GlobalIndex;
     }
 
     ~cuda_profile_block(void)
@@ -24,7 +24,7 @@ struct cuda_profile_block
         cudaEventRecord(Stop);
         cudaEventSynchronize(Stop);
 
-        f32 Milliseconds = 0;
+        u32 Milliseconds = 0;
         cudaEventElapsedTime(&Milliseconds, Start, Stop);
 
         fprintf(stdout, "%s execution time: %f ms\n", Label, Milliseconds);
@@ -33,9 +33,9 @@ struct cuda_profile_block
     }
 };
 
-#define TimedCudaBlock(Name) cuda_profile_block Name
+#define TIMED_CUDA_BLOCK(Name) cuda_profile_block Name
 
-#define NameConcat2(A, B) A##B
-#define NameConcat(A, B) NameConcat2(A, B)
-#define TimeCudaBlock(Name) cuda_profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
-#define TimeCudaFunction TimeCudaBlock(__func__)
+#define NAME_CONCAT2(A, B) A##B
+#define NAME_CONCAT(A, B) NameConcat2(A, B)
+#define TIME_CUDA_BLOCK(Name) cuda_profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1);
+#define TIME_CUDA_FUNCTION TimeCudaBlock(__func__)

@@ -21,31 +21,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char* argv[]) {
-    if (argc != 4) {
+int main(int argc, char *argv[])
+{
+    if (argc != 4)
+    {
         fprintf(stderr, "Usage: %s START END STEPS\n", argv[0]);
         return 1;
     }
 
-    float start = atof(argv[1]);
-    float end = atof(argv[2]);
-    int steps = atoi(argv[3]);
+    float Start = atof(argv[1]);
+    float End = atof(argv[2]);
+    int Steps = atoi(argv[3]);
 
-    if (steps <= 0) {
+    if (Steps <= 0)
+    {
         fprintf(stderr, "Error: STEPS must be positive\n");
         return 1;
     }
 
-    if (steps == 1) {
-        printf("%g\n", start);
+    if (Steps == 1)
+    {
+        printf("%g\n", Start);
         return 0;
     }
 
-    float step_size = (end - start) / (steps - 1);
-    
-    for (int i = 0; i < steps; i++) {
-        float value = start + i * step_size;
-        printf("%g\n", value);
+    float StepSize = (End - Start) / (Steps - 1);
+
+    for (int I = 0; I < Steps; I++)
+    {
+        float Value = Start + I * StepSize;
+        printf("%g\n", Value);
     }
 
     return 0;

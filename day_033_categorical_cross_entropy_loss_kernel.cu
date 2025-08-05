@@ -41,40 +41,44 @@ __global__ void CategoricalCrossEntropyLoss(const float *logits, const int *true
 #elif SOLUTION == 3
 // <N,C> version
 // Each thread handles one element, block reduces to compute softmax denominator
-__global__ void CategoricalCrossEntropyLoss(const float *logits, const int *true_labels, float *loss, int N, int C)
+__global__ void CategoricalCrossEntropyLoss(const float *Logits, const int *TrueLabels, float *Loss, int N, int C)
 {
-    int j = blockIdx.x;  // sample index
-    int k = threadIdx.x; // class index
-    
-    __shared__ float shared_exp[1024]; // assuming C <= 1024
-    
+    int J = blockIdx.x;  // sample index
+    int K = threadIdx.x; // class index
+
+    __shared__ float SharedExp[1024]; // assuming C <= 1024
+
     // Each thread computes exp(logits[j*C + k])
-    float exp_val = 0.0f;
-    if (k < C) {
-        exp_val = expf(logits[j * C + k]);
+    float ExpVal = 0.0f;
+    if (K < C)
+    {
+        ExpVal = expf(Logits[J * C + K]);
     }
-    shared_exp[k] = exp_val;
-    
+    SharedExp[K] = ExpVal;
+
     __syncthreads();
-    
+
     // Block reduction to compute sum of exponentials
-    for (int stride = 1; stride < blockDim.x; stride *= 2) {
-        if (k % (2 * stride) == 0 && k + stride < C) {
-            shared_exp[k] += shared_exp[k + stride];
+    for (int Stride = 1; Stride < blockDim.x; Stride *= 2)
+    {
+        if (K % (2 * Stride) == 0 && K + Stride < C)
+        {
+            SharedExp[K] += SharedExp[K + Stride];
         }
         __syncthreads();
     }
-    
+
     // Thread 0 computes the loss for this sample
-    if (k == 0) {
-        float Loss_j = logf(shared_exp[0]) - logits[j * C + true_labels[j]];
-        atomicAdd(loss, Loss_j / N);
+    if (K == 0)
+    {
+        float LossJ = logf(SharedExp[0]) - Logits[J * C + TrueLabels[J]];
+        atomicAdd(Loss, LossJ / N);
     }
 }
 #endif
 
 // logits, true_labels, loss are device pointers
-void solve(const float *logits, const int *true_labels, float *loss, int N, int C)
+void Solve(const float *Logits, const int *TrueLabels, float *Loss, int N, int C)
 {
     printf("Using solution %d\n", SOLUTION);
 
@@ -83,6 +87,6 @@ void solve(const float *logits, const int *true_labels, float *loss, int N, int 
 #elif SOLUTION == 2
     CategoricalCrossEntropyLoss<<<N, 1>>>(logits, true_labels, loss, N, C);
 #elif SOLUTION == 3
-    CategoricalCrossEntropyLoss<<<N, C>>>(logits, true_labels, loss, N, C);
+    CategoricalCrossEntropyLoss<<<N, C>>>(Logits, TrueLabels, Loss, N, C);
 #endif
 }

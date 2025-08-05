@@ -148,7 +148,7 @@ template <typename T> struct vec2
         return !(*this == Other);
     }
 
-    __device__ __host__ T dot(const vec2 &Other) const
+    __device__ __host__ T Dot(const vec2 &Other) const
     {
         return X * Other.X + Y * Other.Y;
     }
@@ -277,22 +277,22 @@ int main(int argc, char *argv[])
 {
     options Opts = ParseCommandLine(argc, argv);
 
-    u8 *d_Image;
+    u8 *DImage;
 
-    cudaMalloc(&d_Image, sizeof(u8) * Opts.Width * Opts.Height);
+    cudaMalloc(&DImage, sizeof(u8) * Opts.Width * Opts.Height);
 
     dim3 BlockDim(16, 16);
     dim3 GridDim((Opts.Width + 16 - 1) / 16, (Opts.Height + 16 - 1) / 16);
 
     vec2<s32> Circle{Opts.CircleX, Opts.CircleY};
 
-    DrawCircle<<<GridDim, BlockDim>>>(d_Image, Circle, Opts.Radius, Opts.Width, Opts.Height);
+    DrawCircle<<<GridDim, BlockDim>>>(DImage, Circle, Opts.Radius, Opts.Width, Opts.Height);
 
     u8 *Image = (u8 *)malloc(sizeof(u8) * Opts.Width * Opts.Height);
-    cudaMemcpy(Image, d_Image, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Image, DImage, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
 
     stbi_write_jpg(Opts.OutputFilename, Opts.Width, Opts.Height, 1, Image, 100);
 
     free(Image);
-    cudaFree(d_Image);
+    cudaFree(DImage);
 }

@@ -88,18 +88,18 @@ int main()
     u32 *Output = (u32 *)malloc(sizeof(u32) * ReadElements);
 
     {
-        u32 *D_Input, *D_Output;
-        cudaMalloc(&D_Input, sizeof(u32) * ReadElements);
-        cudaMalloc(&D_Output, sizeof(u32) * ReadElements);
+        u32 *DInput, *DOutput;
+        cudaMalloc(&DInput, sizeof(u32) * ReadElements);
+        cudaMalloc(&DOutput, sizeof(u32) * ReadElements);
 
-        cudaMemcpy(D_Input, Input, sizeof(u32) * ReadElements, cudaMemcpyHostToDevice);
+        cudaMemcpy(DInput, Input, sizeof(u32) * ReadElements, cudaMemcpyHostToDevice);
 
-        Sort(D_Input, D_Output, ReadElements);
+        Sort(DInput, DOutput, ReadElements);
 
-        cudaMemcpy(Output, D_Output, sizeof(u32) * ReadElements, cudaMemcpyDeviceToHost);
+        cudaMemcpy(Output, DOutput, sizeof(u32) * ReadElements, cudaMemcpyDeviceToHost);
 
-        cudaFree(&D_Input);
-        cudaFree(&D_Output);
+        cudaFree(&DInput);
+        cudaFree(&DOutput);
     }
 
     for (u32 I = 0; I < ReadElements; I++)

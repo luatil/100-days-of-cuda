@@ -12,12 +12,12 @@
 typedef float f32;
 typedef unsigned int u32;
 
-#define Min(_A, _B) ((_A < _B) ? _A : _B)
-#define Max(_A, _B) ((_A > _B) ? _A : _B)
+#define MIN(_A, _B) ((_A < _B) ? _A : _B)
+#define MAX(_A, _B) ((_A > _B) ? _A : _B)
 
 static u32 ClampU32(u32 MinValue, u32 Value, u32 MaxValue)
 {
-    u32 Result = Max(MinValue, Min(MaxValue, Value));
+    u32 Result = MAX(MinValue, MIN(MaxValue, Value));
     return Result;
 }
 
@@ -30,11 +30,11 @@ struct xorshift32_state
 u32 XorShift32(xorshift32_state *State)
 {
     /* Algorithm "xor" from p. 4 of Marsaglia, "Xorshift RNGs" */
-    u32 x = State->State;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    return State->State = x;
+    u32 X = State->State;
+    X ^= X << 13;
+    X ^= X >> 17;
+    X ^= X << 5;
+    return State->State = X;
 }
 
 static f32 RandomZeroToOne(xorshift32_state *State)
@@ -74,7 +74,7 @@ int main(int Argc, char **Argv)
         f32 A = RandomInRange(&State, -1000.0f, 1000.0f);
         f32 B = RandomInRange(&State, -1000.0f, 1000.0f);
 
-        fprintf(stdout, "%f %f\n", Min(A, B), Max(A, B));
+        fprintf(stdout, "%f %f\n", MIN(A, B), MAX(A, B));
         fprintf(stdout, "%d\n", NumberOfValues);
 
         for (u32 I = 0; I < NumberOfValues; I++)

@@ -6,197 +6,197 @@
 #define BLOCK_SIZE 256
 
 // Phase 1: Each block finds its local maximum
-__global__ void softmax_find_max_kernel(float *input, float *global_max_per_block, int seq_len, int elements_per_block)
+__global__ void SoftmaxFindMaxKernel(float *Input, float *GlobalMaxPerBlock, int SeqLen, int ElementsPerBlock)
 {
-    int block_id = blockIdx.x;
-    int tid = threadIdx.x;
-    int start_idx = block_id * elements_per_block;
-    int end_idx = min(start_idx + elements_per_block, seq_len);
+    int BlockId = blockIdx.x;
+    int Tid = threadIdx.x;
+    int StartIdx = BlockId * ElementsPerBlock;
+    int EndIdx = min(StartIdx + ElementsPerBlock, SeqLen);
 
-    __shared__ float sdata[BLOCK_SIZE];
+    __shared__ float Sdata[BLOCK_SIZE];
 
     // Find local maximum for this block's chunk
-    float thread_max = -FLT_MAX;
-    for (int i = start_idx + tid; i < end_idx; i += blockDim.x)
+    float ThreadMax = -FLT_MAX;
+    for (int I = StartIdx + Tid; I < EndIdx; I += blockDim.x)
     {
-        thread_max = fmaxf(thread_max, input[i]);
+        ThreadMax = fmaxf(ThreadMax, Input[I]);
     }
-    sdata[tid] = thread_max;
+    Sdata[Tid] = ThreadMax;
     __syncthreads();
 
     // Block-level reduction to find local max
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
-        if (tid < s)
+        if (Tid < S)
         {
-            sdata[tid] = fmaxf(sdata[tid], sdata[tid + s]);
+            Sdata[Tid] = fmaxf(Sdata[Tid], Sdata[Tid + S]);
         }
         __syncthreads();
     }
 
     // Store this block's maximum
-    if (tid == 0)
+    if (Tid == 0)
     {
-        global_max_per_block[block_id] = sdata[0];
+        GlobalMaxPerBlock[BlockId] = Sdata[0];
     }
 }
 
 // Phase 2: Reduce all local maxes to find global max
-__global__ void softmax_reduce_max_kernel(float *global_max_per_block, float *global_max, int num_blocks)
+__global__ void SoftmaxReduceMaxKernel(float *GlobalMaxPerBlock, float *GlobalMax, int NumBlocks)
 {
-    int tid = threadIdx.x;
-    __shared__ float sdata[BLOCK_SIZE];
+    int Tid = threadIdx.x;
+    __shared__ float Sdata[BLOCK_SIZE];
 
-    float thread_max = -FLT_MAX;
-    for (int i = tid; i < num_blocks; i += blockDim.x)
+    float ThreadMax = -FLT_MAX;
+    for (int I = Tid; I < NumBlocks; I += blockDim.x)
     {
-        thread_max = fmaxf(thread_max, global_max_per_block[i]);
+        ThreadMax = fmaxf(ThreadMax, GlobalMaxPerBlock[I]);
     }
-    sdata[tid] = thread_max;
+    Sdata[Tid] = ThreadMax;
     __syncthreads();
 
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
-        if (tid < s)
+        if (Tid < S)
         {
-            sdata[tid] = fmaxf(sdata[tid], sdata[tid + s]);
+            Sdata[Tid] = fmaxf(Sdata[Tid], Sdata[Tid + S]);
         }
         __syncthreads();
     }
 
-    if (tid == 0)
+    if (Tid == 0)
     {
-        *global_max = sdata[0];
+        *GlobalMax = Sdata[0];
     }
 }
 
 // Phase 3: Each block computes local sum of exp(x - global_max)
-__global__ void softmax_compute_sum_kernel(float *input, float *global_sum_per_block, float global_max, int seq_len,
-                                           int elements_per_block)
+__global__ void SoftmaxComputeSumKernel(float *Input, float *GlobalSumPerBlock, float GlobalMax, int SeqLen,
+                                           int ElementsPerBlock)
 {
-    int block_id = blockIdx.x;
-    int tid = threadIdx.x;
-    int start_idx = block_id * elements_per_block;
-    int end_idx = min(start_idx + elements_per_block, seq_len);
+    int BlockId = blockIdx.x;
+    int Tid = threadIdx.x;
+    int StartIdx = BlockId * ElementsPerBlock;
+    int EndIdx = min(StartIdx + ElementsPerBlock, SeqLen);
 
-    __shared__ float sdata[BLOCK_SIZE];
+    __shared__ float Sdata[BLOCK_SIZE];
 
     // Compute local sum of exponentials
-    float thread_sum = 0.0f;
-    for (int i = start_idx + tid; i < end_idx; i += blockDim.x)
+    float ThreadSum = 0.0f;
+    for (int I = StartIdx + Tid; I < EndIdx; I += blockDim.x)
     {
-        thread_sum += expf(input[i] - global_max);
+        ThreadSum += expf(Input[I] - GlobalMax);
     }
-    sdata[tid] = thread_sum;
+    Sdata[Tid] = ThreadSum;
     __syncthreads();
 
     // Block-level reduction to find local sum
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
-        if (tid < s)
+        if (Tid < S)
         {
-            sdata[tid] += sdata[tid + s];
+            Sdata[Tid] += Sdata[Tid + S];
         }
         __syncthreads();
     }
 
     // Store this block's sum
-    if (tid == 0)
+    if (Tid == 0)
     {
-        global_sum_per_block[block_id] = sdata[0];
+        GlobalSumPerBlock[BlockId] = Sdata[0];
     }
 }
 
 // Phase 4: Reduce all local sums to find global sum
-__global__ void softmax_reduce_sum_kernel(float *global_sum_per_block, float *global_sum, int num_blocks)
+__global__ void SoftmaxReduceSumKernel(float *GlobalSumPerBlock, float *GlobalSum, int NumBlocks)
 {
-    int tid = threadIdx.x;
-    __shared__ float sdata[BLOCK_SIZE];
+    int Tid = threadIdx.x;
+    __shared__ float Sdata[BLOCK_SIZE];
 
-    float thread_sum = 0.0f;
-    for (int i = tid; i < num_blocks; i += blockDim.x)
+    float ThreadSum = 0.0f;
+    for (int I = Tid; I < NumBlocks; I += blockDim.x)
     {
-        thread_sum += global_sum_per_block[i];
+        ThreadSum += GlobalSumPerBlock[I];
     }
-    sdata[tid] = thread_sum;
+    Sdata[Tid] = ThreadSum;
     __syncthreads();
 
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
-        if (tid < s)
+        if (Tid < S)
         {
-            sdata[tid] += sdata[tid + s];
+            Sdata[Tid] += Sdata[Tid + S];
         }
         __syncthreads();
     }
 
-    if (tid == 0)
+    if (Tid == 0)
     {
-        *global_sum = sdata[0];
+        *GlobalSum = Sdata[0];
     }
 }
 
 // Phase 5: Compute final softmax values
-__global__ void softmax_finalize_kernel(float *input, float *output, float global_max, float global_sum, int seq_len,
-                                        int elements_per_block)
+__global__ void SoftmaxFinalizeKernel(float *Input, float *Output, float GlobalMax, float GlobalSum, int SeqLen,
+                                        int ElementsPerBlock)
 {
-    int block_id = blockIdx.x;
-    int tid = threadIdx.x;
-    int start_idx = block_id * elements_per_block;
-    int end_idx = min(start_idx + elements_per_block, seq_len);
+    int BlockId = blockIdx.x;
+    int Tid = threadIdx.x;
+    int StartIdx = BlockId * ElementsPerBlock;
+    int EndIdx = min(StartIdx + ElementsPerBlock, SeqLen);
 
-    for (int i = start_idx + tid; i < end_idx; i += blockDim.x)
+    for (int I = StartIdx + Tid; I < EndIdx; I += blockDim.x)
     {
-        output[i] = expf(input[i] - global_max) / global_sum;
+        Output[I] = expf(Input[I] - GlobalMax) / GlobalSum;
     }
 }
 
-void softmax_multi_block(float *input, float *output, int seq_len)
+void SoftmaxMultiBlock(float *Input, float *Output, int SeqLen)
 {
-    int elements_per_block = BLOCK_SIZE * 4; // Each block handles 1024 elements
-    int num_blocks = (seq_len + elements_per_block - 1) / elements_per_block;
+    int ElementsPerBlock = BLOCK_SIZE * 4; // Each block handles 1024 elements
+    int NumBlocks = (SeqLen + ElementsPerBlock - 1) / ElementsPerBlock;
 
     // Allocate intermediate arrays
-    float *global_max_per_block, *global_sum_per_block;
-    float *global_max, *global_sum;
+    float *GlobalMaxPerBlock, *GlobalSumPerBlock;
+    float *GlobalMax, *GlobalSum;
 
-    cudaMalloc(&global_max_per_block, sizeof(float) * num_blocks);
-    cudaMalloc(&global_sum_per_block, sizeof(float) * num_blocks);
-    cudaMalloc(&global_max, sizeof(float));
-    cudaMalloc(&global_sum, sizeof(float));
+    cudaMalloc(&GlobalMaxPerBlock, sizeof(float) * NumBlocks);
+    cudaMalloc(&GlobalSumPerBlock, sizeof(float) * NumBlocks);
+    cudaMalloc(&GlobalMax, sizeof(float));
+    cudaMalloc(&GlobalSum, sizeof(float));
 
     // Phase 1: Find local maxes
-    softmax_find_max_kernel<<<num_blocks, BLOCK_SIZE>>>(input, global_max_per_block, seq_len, elements_per_block);
+    SoftmaxFindMaxKernel<<<NumBlocks, BLOCK_SIZE>>>(Input, GlobalMaxPerBlock, SeqLen, ElementsPerBlock);
     cudaDeviceSynchronize();
 
     // Phase 2: Reduce to global max
-    softmax_reduce_max_kernel<<<1, BLOCK_SIZE>>>(global_max_per_block, global_max, num_blocks);
+    SoftmaxReduceMaxKernel<<<1, BLOCK_SIZE>>>(GlobalMaxPerBlock, GlobalMax, NumBlocks);
     cudaDeviceSynchronize();
 
     // Phase 3: Compute local sums
-    softmax_compute_sum_kernel<<<num_blocks, BLOCK_SIZE>>>(input, global_sum_per_block, *global_max, seq_len,
-                                                           elements_per_block);
+    SoftmaxComputeSumKernel<<<NumBlocks, BLOCK_SIZE>>>(Input, GlobalSumPerBlock, *GlobalMax, SeqLen,
+                                                           ElementsPerBlock);
     cudaDeviceSynchronize();
 
     // Phase 4: Reduce to global sum
-    softmax_reduce_sum_kernel<<<1, BLOCK_SIZE>>>(global_sum_per_block, global_sum, num_blocks);
+    SoftmaxReduceSumKernel<<<1, BLOCK_SIZE>>>(GlobalSumPerBlock, GlobalSum, NumBlocks);
     cudaDeviceSynchronize();
 
     // Phase 5: Compute final softmax
-    softmax_finalize_kernel<<<num_blocks, BLOCK_SIZE>>>(input, output, *global_max, *global_sum, seq_len,
-                                                        elements_per_block);
+    SoftmaxFinalizeKernel<<<NumBlocks, BLOCK_SIZE>>>(Input, Output, *GlobalMax, *GlobalSum, SeqLen,
+                                                        ElementsPerBlock);
 
     // Cleanup
-    cudaFree(global_max_per_block);
-    cudaFree(global_sum_per_block);
-    cudaFree(global_max);
-    cudaFree(global_sum);
+    cudaFree(GlobalMaxPerBlock);
+    cudaFree(GlobalSumPerBlock);
+    cudaFree(GlobalMax);
+    cudaFree(GlobalSum);
 }
 
 int main()
 {
-    const u32 seq_len = 10000; // Much larger than 1024!
-    const u32 N = seq_len;
+    const u32 SEQ_LEN = 10000; // Much larger than 1024!
+    const u32 N = SEQ_LEN;
 
     f32 *Input = AllocateCPU(f32, N);
     f32 *Output = AllocateCPU(f32, N);
@@ -207,25 +207,25 @@ int main()
         Input[I] = (f32)(I % 10) + 1.0f;
     }
 
-    f32 *Device_Input, *Device_Output;
-    cudaMalloc(&Device_Input, sizeof(f32) * N);
-    cudaMalloc(&Device_Output, sizeof(f32) * N);
+    f32 *DeviceInput, *DeviceOutput;
+    cudaMalloc(&DeviceInput, sizeof(f32) * N);
+    cudaMalloc(&DeviceOutput, sizeof(f32) * N);
 
-    cudaMemcpy(Device_Input, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceInput, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
 
-    softmax_multi_block(Device_Input, Device_Output, seq_len);
+    SoftmaxMultiBlock(DeviceInput, DeviceOutput, SEQ_LEN);
 
-    cudaMemcpy(Output, Device_Output, sizeof(f32) * N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Output, DeviceOutput, sizeof(f32) * N, cudaMemcpyDeviceToHost);
 
     // Verify softmax properties
-    f32 sum = 0.0f;
-    for (u32 I = 0; I < seq_len; I++)
+    f32 Sum = 0.0f;
+    for (u32 I = 0; I < SEQ_LEN; I++)
     {
-        sum += Output[I];
+        Sum += Output[I];
     }
 
-    fprintf(stdout, "Sequence length: %d\n", seq_len);
-    fprintf(stdout, "Softmax sum: %f (should be ~1.0)\n", sum);
+    fprintf(stdout, "Sequence length: %d\n", SEQ_LEN);
+    fprintf(stdout, "Softmax sum: %f (should be ~1.0)\n", Sum);
     fprintf(stdout, "First 5 values: ");
     for (u32 I = 0; I < 5; I++)
     {
@@ -237,6 +237,6 @@ int main()
 
     FreeCPU(Input);
     FreeCPU(Output);
-    cudaFree(Device_Input);
-    cudaFree(Device_Output);
+    cudaFree(DeviceInput);
+    cudaFree(DeviceOutput);
 }

@@ -12,7 +12,7 @@
 #include "day_001_macros.h"
 #include "day_015_monte_carlo_integration_kernels.cu"
 
-#define ArrayCount(_Array) sizeof(_Array) / sizeof(_Array[0])
+#define ARRAY_COUNT(_Array) sizeof(_Array) / sizeof(_Array[0])
 
 typedef unsigned int u32;
 typedef float f32;
@@ -30,9 +30,9 @@ test_function TestFunctions[] = {
 static void PrintUsage(const char *ProgramName)
 {
     fprintf(stderr, "Usage: %s [", ProgramName);
-    for (u32 I = 0; I < ArrayCount(TestFunctions); I++)
+    for (u32 I = 0; I < ARRAY_COUNT(TestFunctions); I++)
     {
-        const char *Separator = (I == ArrayCount(TestFunctions) - 1) ? "]" : " | ";
+        const char *Separator = (I == ARRAY_COUNT(TestFunctions) - 1) ? "]" : " | ";
         fprintf(stderr, "%s%s", TestFunctions[I].Name, Separator);
     }
     fprintf(stderr, "\n");
@@ -54,7 +54,7 @@ int main(int Argc, char **Argv)
             scanf("%f", Array + I);
         }
 
-        for (u32 I = 0; I < ArrayCount(TestFunctions); I++)
+        for (u32 I = 0; I < ARRAY_COUNT(TestFunctions); I++)
         {
             if (strcmp(TestFunctions[I].Name, Argv[1]) == 0)
             {

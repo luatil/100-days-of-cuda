@@ -92,35 +92,35 @@ __device__ float Square(float X)
     return X * X;
 }
 
-__device__ __forceinline__ float warpReduceSum(float val)
+__device__ __forceinline__ float WarpReduceSum(float Val)
 {
-    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2)
+    for (int Offset = WARP_SIZE / 2; Offset > 0; Offset /= 2)
     {
-        val += __shfl_down_sync(0xffffffff, val, offset);
+        Val += __shfl_down_sync(0xffffffff, Val, Offset);
     }
-    return val;
+    return Val;
 }
 
-__device__ __forceinline__ float blockReduceSum(float val)
+__device__ __forceinline__ float BlockReduceSum(float Val)
 {
-    static __shared__ float shared[WARP_SIZE]; // Shared mem for 32 partial sums
-    int lane = threadIdx.x % WARP_SIZE;
-    int wid = threadIdx.x / WARP_SIZE;
+    static __shared__ float Shared[WARP_SIZE]; // Shared mem for 32 partial sums
+    int Lane = threadIdx.x % WARP_SIZE;
+    int Wid = threadIdx.x / WARP_SIZE;
 
-    val = warpReduceSum(val); // Each warp performs partial reduction
+    Val = WarpReduceSum(Val); // Each warp performs partial reduction
 
-    if (lane == 0)
-        shared[wid] = val; // Write reduced value to shared memory
+    if (Lane == 0)
+        Shared[Wid] = Val; // Write reduced value to shared memory
 
     __syncthreads(); // Wait for all partial reductions
 
     // Read from shared memory only if that warp existed
-    val = (threadIdx.x < blockDim.x / WARP_SIZE) ? shared[lane] : 0;
+    Val = (threadIdx.x < blockDim.x / WARP_SIZE) ? Shared[Lane] : 0;
 
-    if (wid == 0)
-        val = warpReduceSum(val); // Final reduce within first warp
+    if (Wid == 0)
+        Val = WarpReduceSum(Val); // Final reduce within first warp
 
-    return val;
+    return Val;
 }
 
 __global__ void MseKernel(const float *Pred, const float *Target, float *Mse, int N)
@@ -137,7 +137,7 @@ __global__ void MseKernel(const float *Pred, const float *Target, float *Mse, in
         }
     }
 
-    Sum = blockReduceSum(Sum);
+    Sum = BlockReduceSum(Sum);
 
     if (threadIdx.x == 0)
     {
@@ -145,10 +145,10 @@ __global__ void MseKernel(const float *Pred, const float *Target, float *Mse, in
     }
 }
 
-void solve(const float *predictions, const float *targets, float *mse, int N)
+void Solve(const float *Predictions, const float *Targets, float *Mse, int N)
 {
     int GridDim = (N + (BLOCK_DIM * COARSE_FACTOR) - 1) / (BLOCK_DIM * COARSE_FACTOR);
-    MseKernel<<<GridDim, BLOCK_DIM>>>(predictions, targets, mse, N);
+    MseKernel<<<GridDim, BLOCK_DIM>>>(Predictions, Targets, Mse, N);
     cudaDeviceSynchronize();
 }
 #elif SOLUTION == 4
@@ -157,26 +157,26 @@ void solve(const float *predictions, const float *targets, float *mse, int N)
 
 int main()
 {
-    float pred[] = {1.0, 2.0f, 3.0f, 4.0f};
-    float tgt[] = {1.5, 2.5, 3.5, 4.5};
-    float eo = 0.25;
+    float Pred[] = {1.0, 2.0f, 3.0f, 4.0f};
+    float Tgt[] = {1.5, 2.5, 3.5, 4.5};
+    float Eo = 0.25;
 
-    int sizeb = sizeof(pred);
+    int Sizeb = sizeof(Pred);
 
-    float *d_pred, *d_tgt, *d_mse;
+    float *DPred, *DTgt, *DMse;
 
-    cudaMalloc(&d_pred, sizeb);
-    cudaMalloc(&d_tgt, sizeb);
-    cudaMalloc(&d_mse, sizeof(float));
+    cudaMalloc(&DPred, Sizeb);
+    cudaMalloc(&DTgt, Sizeb);
+    cudaMalloc(&DMse, sizeof(float));
 
-    cudaMemcpy(d_pred, pred, sizeb, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_tgt, tgt, sizeb, cudaMemcpyHostToDevice);
+    cudaMemcpy(DPred, Pred, Sizeb, cudaMemcpyHostToDevice);
+    cudaMemcpy(DTgt, Tgt, Sizeb, cudaMemcpyHostToDevice);
 
-    solve(d_pred, d_tgt, d_mse, sizeof(pred) / sizeof(pred[0]));
+    Solve(DPred, DTgt, DMse, sizeof(Pred) / sizeof(Pred[0]));
 
-    float mse = 0.0f;
-    cudaMemcpy(&mse, d_mse, sizeof(float), cudaMemcpyDeviceToHost);
+    float Mse = 0.0f;
+    cudaMemcpy(&Mse, DMse, sizeof(float), cudaMemcpyDeviceToHost);
 
-    printf("mse = %.3f\n", mse);
-    printf("eo = %.3f\n", eo);
+    printf("mse = %.3f\n", Mse);
+    printf("eo = %.3f\n", Eo);
 }

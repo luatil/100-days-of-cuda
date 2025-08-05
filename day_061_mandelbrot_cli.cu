@@ -5,48 +5,48 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct MandelbrotParams
+struct mandelbrot_params
 {
-    int width;
-    int height;
-    double centerX;
-    double centerY;
-    double zoom;
-    int maxIter;
-    char outputFile[256];
+    int Width;
+    int Height;
+    double CenterX;
+    double CenterY;
+    double Zoom;
+    int MaxIter;
+    char OutputFile[256];
 };
 
-__global__ void MandelbrotKernel(int *output, int width, int height, double centerX, double centerY, double zoom,
-                                 int maxIter)
+__global__ void MandelbrotKernel(int *Output, int Width, int Height, double CenterX, double CenterY, double Zoom,
+                                 int MaxIter)
 {
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (col >= width || row >= height)
+    if (Col >= Width || Row >= Height)
         return;
 
-    double scale = 4.0 / (zoom * min(width, height));
-    double x0 = centerX + (col - width / 2.0) * scale;
-    double y0 = centerY + (row - height / 2.0) * scale;
+    double Scale = 4.0 / (Zoom * min(Width, Height));
+    double X0 = CenterX + (Col - Width / 2.0) * Scale;
+    double Y0 = CenterY + (Row - Height / 2.0) * Scale;
 
-    double x = 0.0;
-    double y = 0.0;
-    int iter = 0;
+    double X = 0.0;
+    double Y = 0.0;
+    int Iter = 0;
 
-    while (x * x + y * y <= 4.0 && iter < maxIter)
+    while (X * X + Y * Y <= 4.0 && Iter < MaxIter)
     {
-        double xtemp = x * x - y * y + x0;
-        y = 2 * x * y + y0;
-        x = xtemp;
-        iter++;
+        double Xtemp = X * X - Y * Y + X0;
+        Y = 2 * X * Y + Y0;
+        X = Xtemp;
+        Iter++;
     }
 
-    output[row * width + col] = iter;
+    Output[Row * Width + Col] = Iter;
 }
 
-void PrintUsage(const char *progName)
+void PrintUsage(const char *ProgName)
 {
-    printf("Usage: %s [options]\n", progName);
+    printf("Usage: %s [options]\n", ProgName);
     printf("Options:\n");
     printf("  -w, --width <int>     Width in pixels (default: 1024)\n");
     printf("  -h, --height <int>    Height in pixels (default: 1024)\n");
@@ -58,142 +58,142 @@ void PrintUsage(const char *progName)
     printf("  --help                Show this help message\n");
 }
 
-MandelbrotParams ParseArgs(int argc, char **argv)
+mandelbrot_params ParseArgs(int Argc, char **Argv)
 {
-    MandelbrotParams params = {
-        .width = 1024, .height = 1024, .centerX = -0.5, .centerY = 0.0, .zoom = 1.0, .maxIter = 100, .outputFile = ""};
-    strcpy(params.outputFile, "mandelbrot.jpg");
+    mandelbrot_params Params = {
+        .Width = 1024, .Height = 1024, .CenterX = -0.5, .CenterY = 0.0, .Zoom = 1.0, .MaxIter = 100, .OutputFile = ""};
+    strcpy(Params.OutputFile, "mandelbrot.jpg");
 
-    for (int i = 1; i < argc; i++)
+    for (int I = 1; I < Argc; I++)
     {
-        if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--width") == 0)
+        if (strcmp(Argv[I], "-w") == 0 || strcmp(Argv[I], "--width") == 0)
         {
-            if (i + 1 < argc)
-                params.width = atoi(argv[++i]);
+            if (I + 1 < Argc)
+                Params.Width = atoi(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--height") == 0)
+        else if (strcmp(Argv[I], "-h") == 0 || strcmp(Argv[I], "--height") == 0)
         {
-            if (i + 1 < argc)
-                params.height = atoi(argv[++i]);
+            if (I + 1 < Argc)
+                Params.Height = atoi(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-x") == 0 || strcmp(argv[i], "--centerX") == 0)
+        else if (strcmp(Argv[I], "-x") == 0 || strcmp(Argv[I], "--centerX") == 0)
         {
-            if (i + 1 < argc)
-                params.centerX = atof(argv[++i]);
+            if (I + 1 < Argc)
+                Params.CenterX = atof(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-y") == 0 || strcmp(argv[i], "--centerY") == 0)
+        else if (strcmp(Argv[I], "-y") == 0 || strcmp(Argv[I], "--centerY") == 0)
         {
-            if (i + 1 < argc)
-                params.centerY = atof(argv[++i]);
+            if (I + 1 < Argc)
+                Params.CenterY = atof(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-z") == 0 || strcmp(argv[i], "--zoom") == 0)
+        else if (strcmp(Argv[I], "-z") == 0 || strcmp(Argv[I], "--zoom") == 0)
         {
-            if (i + 1 < argc)
-                params.zoom = atof(argv[++i]);
+            if (I + 1 < Argc)
+                Params.Zoom = atof(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--iterations") == 0)
+        else if (strcmp(Argv[I], "-i") == 0 || strcmp(Argv[I], "--iterations") == 0)
         {
-            if (i + 1 < argc)
-                params.maxIter = atoi(argv[++i]);
+            if (I + 1 < Argc)
+                Params.MaxIter = atoi(Argv[++I]);
         }
-        else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0)
+        else if (strcmp(Argv[I], "-o") == 0 || strcmp(Argv[I], "--output") == 0)
         {
-            if (i + 1 < argc)
-                strcpy(params.outputFile, argv[++i]);
+            if (I + 1 < Argc)
+                strcpy(Params.OutputFile, Argv[++I]);
         }
-        else if (strcmp(argv[i], "--help") == 0)
+        else if (strcmp(Argv[I], "--help") == 0)
         {
-            PrintUsage(argv[0]);
+            PrintUsage(Argv[0]);
             exit(0);
         }
     }
 
-    return params;
+    return Params;
 }
 
-void SaveJPEG(int *hostData, int width, int height, int maxIter, const char *filename)
+void SaveJPEG(int *HostData, int Width, int Height, int MaxIter, const char *Filename)
 {
-    unsigned char *imageData = (unsigned char *)malloc(width * height * 3);
+    unsigned char *ImageData = (unsigned char *)malloc(Width * Height * 3);
 
-    for (int row = 0; row < height; row++)
+    for (int Row = 0; Row < Height; Row++)
     {
-        for (int col = 0; col < width; col++)
+        for (int Col = 0; Col < Width; Col++)
         {
-            int iter = hostData[row * width + col];
-            int idx = (row * width + col) * 3;
+            int Iter = HostData[Row * Width + Col];
+            int Idx = (Row * Width + Col) * 3;
 
-            unsigned char r, g, b;
-            if (iter == maxIter)
+            unsigned char R, G, B;
+            if (Iter == MaxIter)
             {
-                r = g = b = 0;
+                R = G = B = 0;
             }
             else
             {
-                double t = (double)iter / maxIter;
-                r = (unsigned char)(255 * (0.5 + 0.5 * cos(3.0 + t * 12.0)));
-                g = (unsigned char)(255 * (0.5 + 0.5 * cos(2.0 + t * 12.0)));
-                b = (unsigned char)(255 * (0.5 + 0.5 * cos(1.0 + t * 12.0)));
+                double T = (double)Iter / MaxIter;
+                R = (unsigned char)(255 * (0.5 + 0.5 * cos(3.0 + T * 12.0)));
+                G = (unsigned char)(255 * (0.5 + 0.5 * cos(2.0 + T * 12.0)));
+                B = (unsigned char)(255 * (0.5 + 0.5 * cos(1.0 + T * 12.0)));
             }
 
-            imageData[idx] = r;
-            imageData[idx + 1] = g;
-            imageData[idx + 2] = b;
+            ImageData[Idx] = R;
+            ImageData[Idx + 1] = G;
+            ImageData[Idx + 2] = B;
         }
     }
 
-    int result = stbi_write_jpg(filename, width, height, 3, imageData, 90);
-    if (result)
+    int Result = stbi_write_jpg(Filename, Width, Height, 3, ImageData, 90);
+    if (Result)
     {
-        printf("Saved JPEG image to: %s\n", filename);
+        printf("Saved JPEG image to: %s\n", Filename);
     }
     else
     {
-        printf("Error: Could not save image to %s\n", filename);
+        printf("Error: Could not save image to %s\n", Filename);
     }
 
-    free(imageData);
+    free(ImageData);
 }
 
 int main(int argc, char **argv)
 {
-    MandelbrotParams params = ParseArgs(argc, argv);
+    mandelbrot_params Params = ParseArgs(argc, argv);
 
     printf("Generating Mandelbrot set...\n");
-    printf("Resolution: %dx%d, Center: (%.6f, %.6f), Zoom: %.2f, Iterations: %d\n", params.width, params.height,
-           params.centerX, params.centerY, params.zoom, params.maxIter);
-    printf("Output file: %s\n", params.outputFile);
+    printf("Resolution: %dx%d, Center: (%.6f, %.6f), Zoom: %.2f, Iterations: %d\n", Params.Width, Params.Height,
+           Params.CenterX, Params.CenterY, Params.Zoom, Params.MaxIter);
+    printf("Output file: %s\n", Params.OutputFile);
 
-    int *deviceData;
-    int *hostData = (int *)malloc(params.width * params.height * sizeof(int));
+    int *DeviceData;
+    int *HostData = (int *)malloc(Params.Width * Params.Height * sizeof(int));
 
-    cudaMalloc(&deviceData, params.width * params.height * sizeof(int));
+    cudaMalloc(&DeviceData, Params.Width * Params.Height * sizeof(int));
 
-    dim3 blockSize(16, 16);
-    dim3 gridSize((params.width + blockSize.x - 1) / blockSize.x, (params.height + blockSize.y - 1) / blockSize.y);
+    dim3 BlockSize(16, 16);
+    dim3 GridSize((Params.Width + BlockSize.x - 1) / BlockSize.x, (Params.Height + BlockSize.y - 1) / BlockSize.y);
 
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    cudaEvent_t Start, Stop;
+    cudaEventCreate(&Start);
+    cudaEventCreate(&Stop);
 
-    cudaEventRecord(start);
-    MandelbrotKernel<<<gridSize, blockSize>>>(deviceData, params.width, params.height, params.centerX, params.centerY,
-                                              params.zoom, params.maxIter);
-    cudaEventRecord(stop);
+    cudaEventRecord(Start);
+    MandelbrotKernel<<<GridSize, BlockSize>>>(DeviceData, Params.Width, Params.Height, Params.CenterX, Params.CenterY,
+                                              Params.Zoom, Params.MaxIter);
+    cudaEventRecord(Stop);
 
-    cudaMemcpy(hostData, deviceData, params.width * params.height * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(HostData, DeviceData, Params.Width * Params.Height * sizeof(int), cudaMemcpyDeviceToHost);
 
-    cudaEventSynchronize(stop);
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
+    cudaEventSynchronize(Stop);
+    float Milliseconds = 0;
+    cudaEventElapsedTime(&Milliseconds, Start, Stop);
 
-    SaveJPEG(hostData, params.width, params.height, params.maxIter, params.outputFile);
+    SaveJPEG(HostData, Params.Width, Params.Height, Params.MaxIter, Params.OutputFile);
 
-    printf("\nGeneration time: %.2f ms\n", milliseconds);
+    printf("\nGeneration time: %.2f ms\n", Milliseconds);
 
-    free(hostData);
-    cudaFree(deviceData);
-    cudaEventDestroy(start);
-    cudaEventDestroy(stop);
+    free(HostData);
+    cudaFree(DeviceData);
+    cudaEventDestroy(Start);
+    cudaEventDestroy(Stop);
 
     return 0;
 }

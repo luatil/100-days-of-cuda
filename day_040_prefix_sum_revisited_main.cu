@@ -387,10 +387,10 @@ int main(int argc, char *argv[])
     clock_gettime(CLOCK_MONOTONIC, &PrefixStartTime);
 
     int Sum = 0;
-    for (int i = 0; i < Count; i++)
+    for (int I = 0; I < Count; I++)
     {
-        Sum += Numbers[i];
-        Results[i] = Sum;
+        Sum += Numbers[I];
+        Results[I] = Sum;
     }
 
     struct timespec PrefixEndTime;
@@ -414,9 +414,9 @@ int main(int argc, char *argv[])
     }
 
     size_t BufferPos = 0;
-    for (int i = 0; i < Count; i++)
+    for (int I = 0; I < Count; I++)
     {
-        int BytesWritten = snprintf(OutputBuffer + BufferPos, BUFFER_SIZE - BufferPos, "%d\n", Results[i]);
+        int BytesWritten = snprintf(OutputBuffer + BufferPos, BUFFER_SIZE - BufferPos, "%d\n", Results[I]);
 
         if (BytesWritten < 0)
         {

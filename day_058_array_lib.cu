@@ -61,7 +61,7 @@ template <int BlockDim = 256> __global__ void SumKernel(float *X, float *Result,
     }
 }
 
-template<int BlockDim=256> __global__ void CopyKernel(float *V, float X, int N)
+template <int BlockDim = 256> __global__ void CopyKernel(float *V, float X, int N)
 {
     int Tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (Tid < N)
@@ -72,9 +72,9 @@ template<int BlockDim=256> __global__ void CopyKernel(float *V, float X, int N)
 
 __global__ void PrintKernel(float *X, int N)
 {
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        printf("%f\n", X[i]);
+        printf("%f\n", X[I]);
     }
 }
 
@@ -83,105 +83,96 @@ __device__ __host__ int Ceil(int Num, int Den)
     return (Num + Den - 1) / Den;
 }
 
-template <int Dim>
-struct array
+template <int Dim> struct array
 {
-    float *m_Data;
+    float *MData;
 
     array(float X)
     {
-        cudaMalloc(&m_Data, sizeof(float) * Dim);
-        CopyKernel<<<Ceil(Dim, 256), 256>>>(m_Data, X, Dim);
+        cudaMalloc(&MData, sizeof(float) * Dim);
+        CopyKernel<<<Ceil(Dim, 256), 256>>>(MData, X, Dim);
     }
 
-
-    template<typename... Args>
-    array(Args... values)
+    template <typename... Args> array(Args... Values)
     {
         static_assert(sizeof...(Args) == Dim, "Number of arguments must match array dimension");
-        cudaMalloc(&m_Data, sizeof(float) * Dim);
-        float host_data[Dim] = {static_cast<float>(values)...};
-        cudaMemcpy(m_Data, host_data, sizeof(float) * Dim, cudaMemcpyHostToDevice);
+        cudaMalloc(&MData, sizeof(float) * Dim);
+        float HostData[Dim] = {static_cast<float>(Values)...};
+        cudaMemcpy(MData, HostData, sizeof(float) * Dim, cudaMemcpyHostToDevice);
     }
 
-    array(array&& other) noexcept : m_Data(other.m_Data)
+    array(array &&Other) noexcept : MData(Other.MData)
     {
-        other.m_Data = nullptr;
+        Other.MData = nullptr;
     }
 
-    float *data() const
+    float *Data() const
     {
-        return m_Data;
+        return MData;
     }
 
-    int size() const
+    int Size() const
     {
         return Dim;
     }
 
-    array& operator=(array&& other) noexcept
+    array &operator=(array &&Other) noexcept
     {
-        if (this != &other)
+        if (this != &Other)
         {
-            cudaFree(m_Data);
-            m_Data = other.m_Data;
-            other.m_Data = nullptr;
+            cudaFree(MData);
+            MData = Other.MData;
+            Other.MData = nullptr;
         }
         return *this;
     }
 
-    array(const array&) = delete;
-    array& operator=(const array&) = delete;
+    array(const array &) = delete;
+    array &operator=(const array &) = delete;
 
     ~array()
     {
-        if (m_Data)
+        if (MData)
         {
-            cudaFree(m_Data);
+            cudaFree(MData);
         }
     }
 };
 
-template <int Dim>
-array<Dim> operator+(const array<Dim>& A, const array<Dim>& B)
+template <int Dim> array<Dim> operator+(const array<Dim> &A, const array<Dim> &B)
 {
     array<Dim> Result(0.0f);
     AddKernel<<<Ceil(Dim, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Dim);
     return Result;
 }
 
-template <int Dim>
-array<Dim> operator*(const array<Dim>& A, const array<Dim>& B)
+template <int Dim> array<Dim> operator*(const array<Dim> &A, const array<Dim> &B)
 {
     array<Dim> Result(0.0f);
     MultiplyKernel<<<Ceil(Dim, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Dim);
     return Result;
 }
 
-template <int Dim>
-array<Dim> operator*(const array<Dim>& A, float X)
+template <int Dim> array<Dim> operator*(const array<Dim> &A, float X)
 {
     array<Dim> Result(0.0f);
     MultiplyConstantKernel<<<Ceil(Dim, 256), 256>>>(A.m_Data, Result.m_Data, X, Dim);
     return Result;
 }
 
-template <int Dim>
-array<1> Sum(const array<Dim>& A)
+template <int Dim> array<1> Sum(const array<Dim> &A)
 {
     array<1> Result(0.0f);
-    SumKernel<<<Ceil(Dim, 256), 256>>>(A.m_Data, Result.m_Data, Dim);
+    SumKernel<<<Ceil(Dim, 256), 256>>>(A.m_Data, Result.MData, Dim);
     return Result;
 }
 
-template <int Dim>
-void Print(const array<Dim>& Array)
+template <int Dim> void Print(const array<Dim> &Array)
 {
     PrintKernel<<<1, 1>>>(Array.m_Data, Dim);
 }
 
-template <int Dim>
-array<Dim> LinSpace(float Start, float Step)
+template <int Dim> array<Dim> LinSpace(float Start, float Step)
 {
     array<Dim> X(0.0f);
     LinSpaceKernel<<<Ceil(Dim, 256), 256>>>(X.m_Data, Start, Step, Dim);

@@ -63,6 +63,14 @@ query_device_properties: build/query_device_properties
 	./build/query_device_properties
 
 
+.PHONY: format
+format:
+	clang-format -i *.cu
+
+.PHONY: format-names
+format-names:
+	clang-tidy --fix --fix-errors --checks=readability-identifier-naming *.cu *.h
+
 .PHONY: clean
 clean:
 	rm build/main

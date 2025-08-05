@@ -12,131 +12,131 @@
 #include <cuda_runtime.h>
 #endif
 
-__device__ void compare_swap(float *a, float *b, bool dir)
+__device__ void CompareSwap(float *A, float *B, bool Dir)
 {
-    if ((*a > *b) == dir)
+    if ((*A > *B) == Dir)
     {
-        float temp = *a;
-        *a = *b;
-        *b = temp;
+        float Temp = *A;
+        *A = *B;
+        *B = Temp;
     }
 }
 
-__global__ void simple_sort_kernel(float *data, int N)
+__global__ void SimpleSortKernel(float *Data, int N)
 {
-    for (int i = 0; i < N - 1; i++)
+    for (int I = 0; I < N - 1; I++)
     {
-        for (int j = 0; j < N - 1 - i; j++)
+        for (int J = 0; J < N - 1 - I; J++)
         {
-            if (data[j] < data[j + 1])
+            if (Data[J] < Data[J + 1])
             {
-                float temp = data[j];
-                data[j] = data[j + 1];
-                data[j + 1] = temp;
+                float Temp = Data[J];
+                Data[J] = Data[J + 1];
+                Data[J + 1] = Temp;
             }
         }
     }
 }
 
 // input, output are device pointers
-void solve(const float *input, float *output, int N, int k)
+void Solve(const float *Input, float *Output, int N, int K)
 {
-    float *d_data;
-    cudaError_t err = cudaMalloc(&d_data, N * sizeof(float));
-    if (err != cudaSuccess)
+    float *DData;
+    cudaError_t Err = cudaMalloc(&DData, N * sizeof(float));
+    if (Err != cudaSuccess)
     {
-        printf("CUDA malloc failed: %s\n", cudaGetErrorString(err));
+        printf("CUDA malloc failed: %s\n", cudaGetErrorString(Err));
         return;
     }
 
-    err = cudaMemcpy(d_data, input, N * sizeof(float), cudaMemcpyDeviceToDevice);
-    if (err != cudaSuccess)
+    Err = cudaMemcpy(DData, Input, N * sizeof(float), cudaMemcpyDeviceToDevice);
+    if (Err != cudaSuccess)
     {
-        printf("CUDA memcpy failed: %s\n", cudaGetErrorString(err));
-        cudaFree(d_data);
+        printf("CUDA memcpy failed: %s\n", cudaGetErrorString(Err));
+        cudaFree(DData);
         return;
     }
 
-    int block_size = 32;
-    int grid_size = 1;
+    int BlockSize = 32;
+    int GridSize = 1;
 
-    simple_sort_kernel<<<grid_size, block_size>>>(d_data, N);
-    err = cudaGetLastError();
-    if (err != cudaSuccess)
+    SimpleSortKernel<<<GridSize, BlockSize>>>(DData, N);
+    Err = cudaGetLastError();
+    if (Err != cudaSuccess)
     {
-        printf("Sort kernel failed: %s\n", cudaGetErrorString(err));
-        cudaFree(d_data);
+        printf("Sort kernel failed: %s\n", cudaGetErrorString(Err));
+        cudaFree(DData);
         return;
     }
 
     cudaDeviceSynchronize();
 
-    err = cudaMemcpy(output, d_data, k * sizeof(float), cudaMemcpyDeviceToDevice);
-    if (err != cudaSuccess)
+    Err = cudaMemcpy(Output, DData, K * sizeof(float), cudaMemcpyDeviceToDevice);
+    if (Err != cudaSuccess)
     {
-        printf("Output memcpy failed: %s\n", cudaGetErrorString(err));
+        printf("Output memcpy failed: %s\n", cudaGetErrorString(Err));
     }
 
-    cudaFree(d_data);
+    cudaFree(DData);
 }
 
 int main()
 {
-    const float h_input[] = {1.0f, 5.0f, 3.0f, 2.0f, 4.0f};
+    const float H_INPUT[] = {1.0f, 5.0f, 3.0f, 2.0f, 4.0f};
     int N = 5;
-    int k = 3;
+    int K = 3;
 
-    const float expected_output[] = {5.0f, 4.0f, 3.0f};
+    const float EXPECTED_OUTPUT[] = {5.0f, 4.0f, 3.0f};
 
-    float *d_input;
-    float *d_output;
-    float *h_result = (float *)malloc(k * sizeof(float));
+    float *DInput;
+    float *DOutput;
+    float *HResult = (float *)malloc(K * sizeof(float));
 
-    cudaMalloc(&d_input, N * sizeof(float));
-    cudaMalloc(&d_output, k * sizeof(float));
+    cudaMalloc(&DInput, N * sizeof(float));
+    cudaMalloc(&DOutput, K * sizeof(float));
 
-    cudaMemcpy(d_input, h_input, N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DInput, H_INPUT, N * sizeof(float), cudaMemcpyHostToDevice);
 
-    solve(d_input, d_output, N, k);
+    Solve(DInput, DOutput, N, K);
 
-    cudaMemcpy(h_result, d_output, k * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(HResult, DOutput, K * sizeof(float), cudaMemcpyDeviceToHost);
 
     printf("Input: ");
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        printf("%.1f ", h_input[i]);
+        printf("%.1f ", H_INPUT[I]);
     }
     printf("\n");
 
-    printf("Top %d elements: ", k);
-    for (int i = 0; i < k; i++)
+    printf("Top %d elements: ", K);
+    for (int I = 0; I < K; I++)
     {
-        printf("%.1f ", h_result[i]);
+        printf("%.1f ", HResult[I]);
     }
     printf("\n");
 
     printf("Expected: ");
-    for (int i = 0; i < k; i++)
+    for (int I = 0; I < K; I++)
     {
-        printf("%.1f ", expected_output[i]);
+        printf("%.1f ", EXPECTED_OUTPUT[I]);
     }
     printf("\n");
 
-    bool correct = true;
-    for (int i = 0; i < k; i++)
+    bool Correct = true;
+    for (int I = 0; I < K; I++)
     {
-        if (fabs(h_result[i] - expected_output[i]) > 1e-6)
+        if (fabs(HResult[I] - EXPECTED_OUTPUT[I]) > 1e-6)
         {
-            correct = false;
+            Correct = false;
             break;
         }
     }
 
-    printf("Result: %s\n", correct ? "PASS" : "FAIL");
+    printf("Result: %s\n", Correct ? "PASS" : "FAIL");
 
-    cudaFree(d_input);
-    cudaFree(d_output);
-    free(h_result);
+    cudaFree(DInput);
+    cudaFree(DOutput);
+    free(HResult);
 
     return 0;
 }

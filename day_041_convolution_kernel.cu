@@ -4,175 +4,175 @@
 #define TILE_SIZE 16
 #define MAX_KERNEL_SIZE 9
 
-__constant__ float d_kernel[MAX_KERNEL_SIZE * MAX_KERNEL_SIZE];
+__constant__ float DKernel[MAX_KERNEL_SIZE * MAX_KERNEL_SIZE];
 
-__global__ void ConvolutionKernel(unsigned char *input, unsigned char *output, int width, int height, int channels,
-                                  int kernel_size, float scale, float bias)
+__global__ void ConvolutionKernel(unsigned char *Input, unsigned char *Output, int Width, int Height, int Channels,
+                                  int KernelSize, float Scale, float Bias)
 {
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Tx = threadIdx.x;
+    int Ty = threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
 
     // Shared memory for input tile with padding
-    __shared__ float shared_input[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
+    __shared__ float SharedInput[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
 
-    int padding = kernel_size / 2;
-    int shared_width = TILE_SIZE + 2 * padding;
-    int shared_height = TILE_SIZE + 2 * padding;
+    int Padding = KernelSize / 2;
+    int SharedWidth = TILE_SIZE + 2 * Padding;
+    int SharedHeight = TILE_SIZE + 2 * Padding;
 
     // Load data into shared memory with boundary handling
-    for (int dy = 0; dy < shared_height; dy += blockDim.y)
+    for (int Dy = 0; Dy < SharedHeight; Dy += blockDim.y)
     {
-        for (int dx = 0; dx < shared_width; dx += blockDim.x)
+        for (int Dx = 0; Dx < SharedWidth; Dx += blockDim.x)
         {
-            int shared_row = ty + dy;
-            int shared_col = tx + dx;
+            int SharedRow = Ty + Dy;
+            int SharedCol = Tx + Dx;
 
-            if (shared_row < shared_height && shared_col < shared_width)
+            if (SharedRow < SharedHeight && SharedCol < SharedWidth)
             {
-                int global_row = row - padding + dy;
-                int global_col = col - padding + dx;
+                int GlobalRow = Row - Padding + Dy;
+                int GlobalCol = Col - Padding + Dx;
 
                 // Handle boundary conditions with clamping
-                global_row = max(0, min(height - 1, global_row));
-                global_col = max(0, min(width - 1, global_col));
+                GlobalRow = max(0, min(Height - 1, GlobalRow));
+                GlobalCol = max(0, min(Width - 1, GlobalCol));
 
-                shared_input[shared_row][shared_col] = (float)input[global_row * width + global_col] / 255.0f;
+                SharedInput[SharedRow][SharedCol] = (float)Input[GlobalRow * Width + GlobalCol] / 255.0f;
             }
         }
     }
 
     __syncthreads();
 
-    if (row < height && col < width)
+    if (Row < Height && Col < Width)
     {
-        float result = 0.0f;
+        float Result = 0.0f;
 
         // Apply convolution
-        for (int ky = 0; ky < kernel_size; ky++)
+        for (int Ky = 0; Ky < KernelSize; Ky++)
         {
-            for (int kx = 0; kx < kernel_size; kx++)
+            for (int Kx = 0; Kx < KernelSize; Kx++)
             {
-                int shared_row = ty + padding + ky - padding;
-                int shared_col = tx + padding + kx - padding;
+                int SharedRow = Ty + Padding + Ky - Padding;
+                int SharedCol = Tx + Padding + Kx - Padding;
 
-                float kernel_val = d_kernel[ky * kernel_size + kx];
-                float input_val = shared_input[shared_row][shared_col];
+                float KernelVal = DKernel[Ky * KernelSize + Kx];
+                float InputVal = SharedInput[SharedRow][SharedCol];
 
-                result += kernel_val * input_val;
+                Result += KernelVal * InputVal;
             }
         }
 
         // Apply scale and bias, then clamp to [0, 255]
-        result = result * scale + bias;
-        result = fmaxf(0.0f, fminf(255.0f, result));
+        Result = Result * Scale + Bias;
+        Result = fmaxf(0.0f, fminf(255.0f, Result));
 
-        output[row * width + col] = (unsigned char)result;
+        Output[Row * Width + Col] = (unsigned char)Result;
     }
 }
 
-__global__ void ConvolutionKernelRGB(unsigned char *input, unsigned char *output, int width, int height, int channels,
-                                     int kernel_size, float scale, float bias)
+__global__ void ConvolutionKernelRGB(unsigned char *Input, unsigned char *Output, int Width, int Height, int Channels,
+                                     int KernelSize, float Scale, float Bias)
 {
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Tx = threadIdx.x;
+    int Ty = threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
 
     // Shared memory for RGB channels
-    __shared__ float shared_r[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
-    __shared__ float shared_g[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
-    __shared__ float shared_b[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
+    __shared__ float SharedR[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
+    __shared__ float SharedG[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
+    __shared__ float SharedB[TILE_SIZE + MAX_KERNEL_SIZE - 1][TILE_SIZE + MAX_KERNEL_SIZE - 1];
 
-    int padding = kernel_size / 2;
-    int shared_width = TILE_SIZE + 2 * padding;
-    int shared_height = TILE_SIZE + 2 * padding;
+    int Padding = KernelSize / 2;
+    int SharedWidth = TILE_SIZE + 2 * Padding;
+    int SharedHeight = TILE_SIZE + 2 * Padding;
 
     // Load RGB data into shared memory
-    for (int dy = 0; dy < shared_height; dy += blockDim.y)
+    for (int Dy = 0; Dy < SharedHeight; Dy += blockDim.y)
     {
-        for (int dx = 0; dx < shared_width; dx += blockDim.x)
+        for (int Dx = 0; Dx < SharedWidth; Dx += blockDim.x)
         {
-            int shared_row = ty + dy;
-            int shared_col = tx + dx;
+            int SharedRow = Ty + Dy;
+            int SharedCol = Tx + Dx;
 
-            if (shared_row < shared_height && shared_col < shared_width)
+            if (SharedRow < SharedHeight && SharedCol < SharedWidth)
             {
-                int global_row = row - padding + dy;
-                int global_col = col - padding + dx;
+                int GlobalRow = Row - Padding + Dy;
+                int GlobalCol = Col - Padding + Dx;
 
                 // Clamp coordinates
-                global_row = max(0, min(height - 1, global_row));
-                global_col = max(0, min(width - 1, global_col));
+                GlobalRow = max(0, min(Height - 1, GlobalRow));
+                GlobalCol = max(0, min(Width - 1, GlobalCol));
 
-                int idx = (global_row * width + global_col) * channels;
+                int Idx = (GlobalRow * Width + GlobalCol) * Channels;
 
-                shared_r[shared_row][shared_col] = (float)input[idx] / 255.0f;
-                shared_g[shared_row][shared_col] = (float)input[idx + 1] / 255.0f;
-                shared_b[shared_row][shared_col] = (float)input[idx + 2] / 255.0f;
+                SharedR[SharedRow][SharedCol] = (float)Input[Idx] / 255.0f;
+                SharedG[SharedRow][SharedCol] = (float)Input[Idx + 1] / 255.0f;
+                SharedB[SharedRow][SharedCol] = (float)Input[Idx + 2] / 255.0f;
             }
         }
     }
 
     __syncthreads();
 
-    if (row < height && col < width)
+    if (Row < Height && Col < Width)
     {
-        float result_r = 0.0f, result_g = 0.0f, result_b = 0.0f;
+        float ResultR = 0.0f, ResultG = 0.0f, ResultB = 0.0f;
 
         // Apply convolution to each channel
-        for (int ky = 0; ky < kernel_size; ky++)
+        for (int Ky = 0; Ky < KernelSize; Ky++)
         {
-            for (int kx = 0; kx < kernel_size; kx++)
+            for (int Kx = 0; Kx < KernelSize; Kx++)
             {
-                int shared_row = ty + padding + ky - padding;
-                int shared_col = tx + padding + kx - padding;
+                int SharedRow = Ty + Padding + Ky - Padding;
+                int SharedCol = Tx + Padding + Kx - Padding;
 
-                float kernel_val = d_kernel[ky * kernel_size + kx];
+                float KernelVal = DKernel[Ky * KernelSize + Kx];
 
-                result_r += kernel_val * shared_r[shared_row][shared_col];
-                result_g += kernel_val * shared_g[shared_row][shared_col];
-                result_b += kernel_val * shared_b[shared_row][shared_col];
+                ResultR += KernelVal * SharedR[SharedRow][SharedCol];
+                ResultG += KernelVal * SharedG[SharedRow][SharedCol];
+                ResultB += KernelVal * SharedB[SharedRow][SharedCol];
             }
         }
 
         // Apply scale and bias, then clamp
-        result_r = fmaxf(0.0f, fminf(255.0f, result_r * scale + bias));
-        result_g = fmaxf(0.0f, fminf(255.0f, result_g * scale + bias));
-        result_b = fmaxf(0.0f, fminf(255.0f, result_b * scale + bias));
+        ResultR = fmaxf(0.0f, fminf(255.0f, ResultR * Scale + Bias));
+        ResultG = fmaxf(0.0f, fminf(255.0f, ResultG * Scale + Bias));
+        ResultB = fmaxf(0.0f, fminf(255.0f, ResultB * Scale + Bias));
 
-        int idx = (row * width + col) * channels;
-        output[idx] = (unsigned char)result_r;
-        output[idx + 1] = (unsigned char)result_g;
-        output[idx + 2] = (unsigned char)result_b;
+        int Idx = (Row * Width + Col) * Channels;
+        Output[Idx] = (unsigned char)ResultR;
+        Output[Idx + 1] = (unsigned char)ResultG;
+        Output[Idx + 2] = (unsigned char)ResultB;
 
-        if (channels == 4)
+        if (Channels == 4)
         {
-            output[idx + 3] = input[idx + 3]; // Copy alpha channel
+            Output[Idx + 3] = Input[Idx + 3]; // Copy alpha channel
         }
     }
 }
 
-void LaunchConvolution(unsigned char *d_input, unsigned char *d_output, int width, int height, int channels,
-                       float *h_kernel, int kernel_size, float scale, float bias)
+void LaunchConvolution(unsigned char *DInput, unsigned char *DOutput, int Width, int Height, int Channels,
+                       float *HKernel, int KernelSize, float Scale, float Bias)
 {
     // Copy kernel to constant memory
-    cudaMemcpyToSymbol(d_kernel, h_kernel, kernel_size * kernel_size * sizeof(float));
+    cudaMemcpyToSymbol(DKernel, HKernel, KernelSize * KernelSize * sizeof(float));
 
     // Setup grid and block dimensions
-    dim3 blockSize(TILE_SIZE, TILE_SIZE);
-    dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
+    dim3 BlockSize(TILE_SIZE, TILE_SIZE);
+    dim3 GridSize((Width + BlockSize.x - 1) / BlockSize.x, (Height + BlockSize.y - 1) / BlockSize.y);
 
-    if (channels == 1)
+    if (Channels == 1)
     {
-        ConvolutionKernel<<<gridSize, blockSize>>>(d_input, d_output, width, height, channels, kernel_size, scale,
-                                                   bias);
+        ConvolutionKernel<<<GridSize, BlockSize>>>(DInput, DOutput, Width, Height, Channels, KernelSize, Scale,
+                                                   Bias);
     }
     else
     {
-        ConvolutionKernelRGB<<<gridSize, blockSize>>>(d_input, d_output, width, height, channels, kernel_size, scale,
-                                                      bias);
+        ConvolutionKernelRGB<<<GridSize, BlockSize>>>(DInput, DOutput, Width, Height, Channels, KernelSize, Scale,
+                                                      Bias);
     }
 
     cudaDeviceSynchronize();

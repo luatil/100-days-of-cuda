@@ -14,36 +14,35 @@
  * index in the input array.
  */
 
-
 /*
  * Input: input = [0, 1, 2, 1, 0],  N = 5, num_bins = 3
  * Output: [2, 2, 1]
  */
 
 /*
-* Input: input = [3, 3, 3, 3], N = 4, num_bins = 5
-* Output: [0, 0, 0, 4, 0]
-*/
+ * Input: input = [3, 3, 3, 3], N = 4, num_bins = 5
+ * Output: [0, 0, 0, 4, 0]
+ */
 
 /*
-* 1 ≤ N ≤ 100,000,000
-* 0 ≤ input[i] < num_bins
-* 1 ≤ num_bins ≤ 1024
-*/
+ * 1 ≤ N ≤ 100,000,000
+ * 0 ≤ input[i] < num_bins
+ * 1 ≤ num_bins ≤ 1024
+ */
 
 /*
-* // input, histogram are device pointers
-* void solve(const int* input, int* histogram, int N, int num_bins) {
-*
-* }
-*/
+ * // input, histogram are device pointers
+ * void solve(const int* input, int* histogram, int N, int num_bins) {
+ *
+ * }
+ */
 
-__global__ void PrintHistogram(int* histogram, int num_bins)
+__global__ void PrintHistogram(int *Histogram, int NumBins)
 {
     printf("HERE");
-    for(int i = 0; i < num_bins; i++)
+    for (int I = 0; I < NumBins; I++)
     {
-        printf("%d ", histogram[i]);
+        printf("%d ", Histogram[I]);
     }
     printf("\n");
 }
@@ -51,31 +50,32 @@ __global__ void PrintHistogram(int* histogram, int num_bins)
 int main()
 {
     puts("Here");
-    const int input[] = {0, 1, 2, 1, 0};
-    const int N = sizeof(input) / sizeof(input[0]);
-    const int num_bins = 3;
+    const int INPUT[] = {0, 1, 2, 1, 0};
+    const int N = sizeof(INPUT) / sizeof(INPUT[0]);
+    const int NUM_BINS = 3;
 
-    int *d_input;
-    cudaMalloc((void**)&d_input, N * sizeof(int));
-    cudaMemcpy(d_input, input, N * sizeof(int), cudaMemcpyHostToDevice);
+    int *DInput;
+    cudaMalloc((void **)&DInput, N * sizeof(int));
+    cudaMemcpy(DInput, INPUT, N * sizeof(int), cudaMemcpyHostToDevice);
 
-    int *d_histogram;
-    cudaMalloc((void**)&d_histogram, num_bins * sizeof(int));
-    cudaMemset(d_histogram, 0, num_bins * sizeof(int));
+    int *DHistogram;
+    cudaMalloc((void **)&DHistogram, NUM_BINS * sizeof(int));
+    cudaMemset(DHistogram, 0, NUM_BINS * sizeof(int));
 
-    solve(d_input, d_histogram, N, num_bins);
+    solve(DInput, DHistogram, N, NUM_BINS);
     cudaDeviceSynchronize();
 
-    int *h_histogram = (int*)malloc(num_bins * sizeof(int));
-    cudaMemcpy(h_histogram, d_histogram, num_bins * sizeof(int), cudaMemcpyDeviceToHost);
+    int *HHistogram = (int *)malloc(NUM_BINS * sizeof(int));
+    cudaMemcpy(HHistogram, DHistogram, NUM_BINS * sizeof(int), cudaMemcpyDeviceToHost);
 
     printf("Histogram: ");
-    for(int i = 0; i < num_bins; i++) {
-        printf("%d ", h_histogram[i]);
+    for (int I = 0; I < NUM_BINS; I++)
+    {
+        printf("%d ", HHistogram[I]);
     }
     printf("\n");
 
-    free(h_histogram);
-    cudaFree(d_histogram);
-    cudaFree(d_input);
+    free(HHistogram);
+    cudaFree(DHistogram);
+    cudaFree(DInput);
 }

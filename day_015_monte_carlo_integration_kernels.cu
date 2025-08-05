@@ -11,19 +11,19 @@
 typedef float f32;
 typedef unsigned int u32;
 
-#define Min(a, b) ((a < b) ? a : b)
+#define MIN(a, b) ((a < b) ? a : b)
 
 typedef float f32;
 typedef unsigned int u32;
 
-typedef f32 monte_carlo_integration_function(const f32 *Y_Samples, f32 A, f32 B, u32 NumberOfSamples);
+typedef f32 monte_carlo_integration_function(const f32 *YSamples, f32 A, f32 B, u32 NumberOfSamples);
 
-__host__ static f32 Launch_MonteCarloIntegration_CPU(const f32 *Y_Samples, f32 A, f32 B, u32 NumberOfSamples)
+__host__ static f32 LaunchMonteCarloIntegrationCpu(const f32 *YSamples, f32 A, f32 B, u32 NumberOfSamples)
 {
     f32 TotalSum = 0.0f;
     for (u32 I = 0; I < NumberOfSamples; I++)
     {
-        TotalSum += Y_Samples[I];
+        TotalSum += YSamples[I];
     }
 
     f32 Result = (B - A) * TotalSum / NumberOfSamples;
@@ -35,19 +35,19 @@ __host__ static f32 Launch_MonteCarloIntegration_CPU(const f32 *Y_Samples, f32 A
 #define SHARED_MEM_WIDTH 768
 #endif
 
-__global__ void MonteCarloIntegration_Naive(const f32 *Y_Samples, f32 *Result, f32 A, f32 B, u32 NumberOfSamples)
+__global__ void MonteCarloIntegrationNaive(const f32 *YSamples, f32 *Result, f32 A, f32 B, u32 NumberOfSamples)
 {
     __shared__ f32 SharedData[SHARED_MEM_WIDTH];
 
     u32 Tid = blockIdx.x * blockDim.x + threadIdx.x;
     u32 Tx = threadIdx.x;
 
-    SharedData[Tx] = (Tid < NumberOfSamples) ? Y_Samples[Tid] : 0.0f;
+    SharedData[Tx] = (Tid < NumberOfSamples) ? YSamples[Tid] : 0.0f;
     __syncthreads();
 
     if (Tx == 0)
     {
-        for (u32 I = 0; I < Min(SHARED_MEM_WIDTH, NumberOfSamples); I++)
+        for (u32 I = 0; I < MIN(SHARED_MEM_WIDTH, NumberOfSamples); I++)
         {
             Result[blockIdx.x] += SharedData[I];
         }
@@ -55,21 +55,21 @@ __global__ void MonteCarloIntegration_Naive(const f32 *Y_Samples, f32 *Result, f
 }
 
 // Y_Samples is a __host__ pointer
-__host__ static f32 Launch_MonteCarloIntegration_Naive(const f32 *Y_Samples, f32 A, f32 B, u32 NumberOfSamples)
+__host__ static f32 LaunchMonteCarloIntegrationNaive(const f32 *YSamples, f32 A, f32 B, u32 NumberOfSamples)
 {
     // Copy Y_samples to gpu
-    f32 *Device_Y_Samples;
-    cudaMalloc(&Device_Y_Samples, sizeof(f32) * NumberOfSamples);
+    f32 *DeviceYSamples;
+    cudaMalloc(&DeviceYSamples, sizeof(f32) * NumberOfSamples);
 
-    cudaMemcpy(Device_Y_Samples, Y_Samples, sizeof(f32) * NumberOfSamples, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceYSamples, YSamples, sizeof(f32) * NumberOfSamples, cudaMemcpyHostToDevice);
 
-    u32 ThreadsPerGrid = Min(SHARED_MEM_WIDTH, NumberOfSamples);
+    u32 ThreadsPerGrid = MIN(SHARED_MEM_WIDTH, NumberOfSamples);
     u32 BlocksPerGrid = (NumberOfSamples + ThreadsPerGrid - 1) / ThreadsPerGrid;
 
     f32 *DeviceResultsPerBlock;
     cudaMalloc(&DeviceResultsPerBlock, sizeof(f32) * BlocksPerGrid);
 
-    MonteCarloIntegration_Naive<<<BlocksPerGrid, ThreadsPerGrid>>>(Y_Samples, DeviceResultsPerBlock, A, B,
+    MonteCarloIntegrationNaive<<<BlocksPerGrid, ThreadsPerGrid>>>(YSamples, DeviceResultsPerBlock, A, B,
                                                                    NumberOfSamples);
 
     f32 *ResultsPerBlock = AllocateCPU(f32, BlocksPerGrid);
@@ -83,7 +83,7 @@ __host__ static f32 Launch_MonteCarloIntegration_Naive(const f32 *Y_Samples, f32
         TotalSum += ResultsPerBlock[I];
     }
 
-    cudaFree(Device_Y_Samples);
+    cudaFree(DeviceYSamples);
     cudaFree(DeviceResultsPerBlock);
     free(ResultsPerBlock);
 
@@ -92,7 +92,7 @@ __host__ static f32 Launch_MonteCarloIntegration_Naive(const f32 *Y_Samples, f32
     return Result;
 }
 
-__global__ void MonteCarloIntegration_SimpleReduction(f32 *Y_Samples, f32 *Result, f32 A, f32 B, u32 NumberOfSamples)
+__global__ void MonteCarloIntegrationSimpleReduction(f32 *YSamples, f32 *Result, f32 A, f32 B, u32 NumberOfSamples)
 {
     u32 Tid = threadIdx.x * 2;
     u32 Tx = threadIdx.x;
@@ -101,33 +101,33 @@ __global__ void MonteCarloIntegration_SimpleReduction(f32 *Y_Samples, f32 *Resul
     {
         if (Tx % Stride == 0)
         {
-            Y_Samples[Tid] += Y_Samples[Tid + Stride];
+            YSamples[Tid] += YSamples[Tid + Stride];
         }
         __syncthreads();
     }
 
     if (threadIdx.x == 0)
     {
-        *Result = Y_Samples[0];
+        *Result = YSamples[0];
     }
 }
 
 // Y_Samples is a __host__ pointer
-__host__ static f32 Launch_MonteCarloIntegration_TreeReduction(const f32 *Y_Samples, f32 A, f32 B, u32 NumberOfSamples)
+__host__ static f32 LaunchMonteCarloIntegrationTreeReduction(const f32 *YSamples, f32 A, f32 B, u32 NumberOfSamples)
 {
     // Copy Y_samples to gpu
-    f32 *Device_Y_Samples;
-    cudaMalloc(&Device_Y_Samples, sizeof(f32) * NumberOfSamples);
+    f32 *DeviceYSamples;
+    cudaMalloc(&DeviceYSamples, sizeof(f32) * NumberOfSamples);
 
-    cudaMemcpy(Device_Y_Samples, Y_Samples, sizeof(f32) * NumberOfSamples, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceYSamples, YSamples, sizeof(f32) * NumberOfSamples, cudaMemcpyHostToDevice);
 
-    u32 ThreadsPerGrid = Min(SHARED_MEM_WIDTH, NumberOfSamples);
+    u32 ThreadsPerGrid = MIN(SHARED_MEM_WIDTH, NumberOfSamples);
     u32 BlocksPerGrid = (NumberOfSamples + ThreadsPerGrid - 1) / ThreadsPerGrid;
 
     f32 *DeviceResultsPerBlock;
     cudaMalloc(&DeviceResultsPerBlock, sizeof(f32) * BlocksPerGrid);
 
-    MonteCarloIntegration_Naive<<<BlocksPerGrid, ThreadsPerGrid>>>(Y_Samples, DeviceResultsPerBlock, A, B,
+    MonteCarloIntegrationNaive<<<BlocksPerGrid, ThreadsPerGrid>>>(YSamples, DeviceResultsPerBlock, A, B,
                                                                    NumberOfSamples);
 
     f32 *ResultsPerBlock = AllocateCPU(f32, BlocksPerGrid);
@@ -141,7 +141,7 @@ __host__ static f32 Launch_MonteCarloIntegration_TreeReduction(const f32 *Y_Samp
         TotalSum += ResultsPerBlock[I];
     }
 
-    cudaFree(Device_Y_Samples);
+    cudaFree(DeviceYSamples);
     cudaFree(DeviceResultsPerBlock);
     free(ResultsPerBlock);
 

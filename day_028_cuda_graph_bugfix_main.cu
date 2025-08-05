@@ -9,225 +9,225 @@
 #define NUM_ITERATIONS 1000
 
 // Simple vector addition kernel
-__global__ void vectorAdd(const float *a, const float *b, float *c, int n)
+__global__ void VectorAdd(const float *A, const float *B, float *C, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        c[idx] = a[idx] + b[idx];
+        C[Idx] = A[Idx] + B[Idx];
     }
 }
 
 // Vector scaling kernel
-__global__ void vectorScale(float *a, float scale, int n)
+__global__ void VectorScale(float *A, float Scale, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        a[idx] *= scale;
+        A[Idx] *= Scale;
     }
 }
 
 // Vector square kernel
-__global__ void vectorSquare(float *a, int n)
+__global__ void VectorSquare(float *A, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        a[idx] = a[idx] * a[idx];
+        A[Idx] = A[Idx] * A[Idx];
     }
 }
 
 // CUDA timing utility
-struct CUDATimer
+struct cuda_timer
 {
-    cudaEvent_t start, stop;
+    cudaEvent_t Start, Stop;
 
-    CUDATimer()
+    cuda_timer()
     {
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
+        cudaEventCreate(&Start);
+        cudaEventCreate(&Stop);
     }
 
-    ~CUDATimer()
+    ~cuda_timer()
     {
-        cudaEventDestroy(start);
-        cudaEventDestroy(stop);
+        cudaEventDestroy(Start);
+        cudaEventDestroy(Stop);
     }
 
-    void startTimer()
+    void StartTimer()
     {
-        cudaEventRecord(start);
+        cudaEventRecord(Start);
     }
 
-    float stopTimer()
+    float StopTimer()
     {
-        cudaEventRecord(stop);
-        cudaEventSynchronize(stop);
-        float milliseconds = 0;
-        cudaEventElapsedTime(&milliseconds, start, stop);
-        return milliseconds;
+        cudaEventRecord(Stop);
+        cudaEventSynchronize(Stop);
+        float Milliseconds = 0;
+        cudaEventElapsedTime(&Milliseconds, Start, Stop);
+        return Milliseconds;
     }
 };
 
 // Traditional kernel launches
-float runTraditionalLaunches(float *d_a, float *d_b, float *d_c, float *d_temp, int n)
+float RunTraditionalLaunches(float *DA, float *DB, float *DC, float *DTemp, int N)
 {
-    int gridSize = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    CUDATimer timer;
+    int GridSize = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    cuda_timer Timer;
 
-    timer.startTimer();
+    Timer.StartTimer();
 
-    for (int i = 0; i < NUM_ITERATIONS; i++)
+    for (int I = 0; I < NUM_ITERATIONS; I++)
     {
         // Sequence of operations: add -> scale -> square
-        vectorAdd<<<gridSize, BLOCK_SIZE>>>(d_a, d_b, d_temp, n);
-        vectorScale<<<gridSize, BLOCK_SIZE>>>(d_temp, 2.0f, n);
-        vectorSquare<<<gridSize, BLOCK_SIZE>>>(d_temp, n);
+        VectorAdd<<<GridSize, BLOCK_SIZE>>>(DA, DB, DTemp, N);
+        VectorScale<<<GridSize, BLOCK_SIZE>>>(DTemp, 2.0f, N);
+        VectorSquare<<<GridSize, BLOCK_SIZE>>>(DTemp, N);
 
         // Copy result back to d_c
-        cudaMemcpy(d_c, d_temp, n * sizeof(float), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(DC, DTemp, N * sizeof(float), cudaMemcpyDeviceToDevice);
     }
 
     cudaDeviceSynchronize();
-    return timer.stopTimer();
+    return Timer.StopTimer();
 }
 
 // CUDA Graphs execution
-float runCudaGraphs(float *d_a, float *d_b, float *d_c, float *d_temp, int n)
+float RunCudaGraphs(float *DA, float *DB, float *DC, float *DTemp, int N)
 {
-    int gridSize = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    cudaGraph_t graph;
-    cudaGraphExec_t graphExec;
-    cudaStream_t stream;
+    int GridSize = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    cudaGraph_t Graph;
+    cudaGraphExec_t GraphExec;
+    cudaStream_t Stream;
 
     // Create stream for graph capture
-    cudaStreamCreate(&stream);
+    cudaStreamCreate(&Stream);
 
     // Start graph capture
-    cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+    cudaStreamBeginCapture(Stream, cudaStreamCaptureModeGlobal);
 
     // Record the sequence of operations
-    vectorAdd<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_a, d_b, d_temp, n);
-    vectorScale<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_temp, 2.0f, n);
-    vectorSquare<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_temp, n);
-    cudaMemcpyAsync(d_c, d_temp, n * sizeof(float), cudaMemcpyDeviceToDevice, stream);
+    VectorAdd<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DA, DB, DTemp, N);
+    VectorScale<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DTemp, 2.0f, N);
+    VectorSquare<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DTemp, N);
+    cudaMemcpyAsync(DC, DTemp, N * sizeof(float), cudaMemcpyDeviceToDevice, Stream);
 
     // End capture and create graph
-    cudaStreamEndCapture(stream, &graph);
+    cudaStreamEndCapture(Stream, &Graph);
 
     // Instantiate the graph
-    cudaGraphInstantiate(&graphExec, graph, NULL, NULL, 0);
+    cudaGraphInstantiate(&GraphExec, Graph, NULL, NULL, 0);
 
     // Time the graph execution
-    CUDATimer timer;
-    timer.startTimer();
+    cuda_timer Timer;
+    Timer.StartTimer();
 
-    for (int i = 0; i < NUM_ITERATIONS; i++)
+    for (int I = 0; I < NUM_ITERATIONS; I++)
     {
-        cudaGraphLaunch(graphExec, stream);
+        cudaGraphLaunch(GraphExec, Stream);
     }
 
-    cudaStreamSynchronize(stream);
-    float elapsed = timer.stopTimer();
+    cudaStreamSynchronize(Stream);
+    float Elapsed = Timer.StopTimer();
 
     // Cleanup
-    cudaGraphExecDestroy(graphExec);
-    cudaGraphDestroy(graph);
-    cudaStreamDestroy(stream);
+    cudaGraphExecDestroy(GraphExec);
+    cudaGraphDestroy(Graph);
+    cudaStreamDestroy(Stream);
 
-    return elapsed;
+    return Elapsed;
 }
 
 // Fixed verification function - using fabsf() instead of abs()
-bool verifyResults(float *h_a, float *h_b, float *h_result, int n, const char *method_name)
+bool VerifyResults(float *HA, float *HB, float *HResult, int N, const char *MethodName)
 {
-    bool correct = true;
-    const float epsilon = 1e-5f;
-    int error_count = 0;
+    bool Correct = true;
+    const float EPSILON = 1e-5f;
+    int ErrorCount = 0;
 
-    printf("Verifying %s results...\n", method_name);
+    printf("Verifying %s results...\n", MethodName);
 
-    for (int i = 0; i < n; i++)
+    for (int I = 0; I < N; I++)
     {
         // Expected: ((a + b) * 2.0)^2
-        float expected = (h_a[i] + h_b[i]) * 2.0f;
-        expected = expected * expected;
+        float Expected = (HA[I] + HB[I]) * 2.0f;
+        Expected = Expected * Expected;
 
         // BUG FIX: Use fabsf() instead of abs() for floating point comparison
-        if (fabsf(h_result[i] - expected) > epsilon)
+        if (fabsf(HResult[I] - Expected) > EPSILON)
         {
-            if (error_count < 10) // Limit error reporting
+            if (ErrorCount < 10) // Limit error reporting
             {
-                printf("  Mismatch at index %d: got %.6f, expected %.6f, diff: %.6f\n", i, h_result[i], expected,
-                       fabsf(h_result[i] - expected));
+                printf("  Mismatch at index %d: got %.6f, expected %.6f, diff: %.6f\n", I, HResult[I], Expected,
+                       fabsf(HResult[I] - Expected));
             }
-            correct = false;
-            error_count++;
+            Correct = false;
+            ErrorCount++;
         }
     }
 
-    if (error_count > 0)
+    if (ErrorCount > 0)
     {
-        printf("  Total errors found: %d out of %d elements\n", error_count, n);
+        printf("  Total errors found: %d out of %d elements\n", ErrorCount, N);
     }
 
-    return correct;
+    return Correct;
 }
 
 // Compare two result arrays with detailed analysis
-bool compareResults(float *result1, float *result2, int n, const char *name1, const char *name2)
+bool CompareResults(float *Result1, float *Result2, int N, const char *Name1, const char *Name2)
 {
-    bool match = true;
-    const float epsilon = 1e-5f;
-    int mismatch_count = 0;
-    float max_diff = 0.0f;
+    bool Match = true;
+    const float EPSILON = 1e-5f;
+    int MismatchCount = 0;
+    float MaxDiff = 0.0f;
 
-    printf("Comparing %s vs %s results...\n", name1, name2);
+    printf("Comparing %s vs %s results...\n", Name1, Name2);
 
-    for (int i = 0; i < n; i++)
+    for (int I = 0; I < N; I++)
     {
         // BUG FIX: Use fabsf() instead of abs() for floating point comparison
-        float diff = fabsf(result1[i] - result2[i]);
+        float Diff = fabsf(Result1[I] - Result2[I]);
 
-        if (diff > max_diff)
+        if (Diff > MaxDiff)
         {
-            max_diff = diff;
+            MaxDiff = Diff;
         }
 
-        if (diff > epsilon)
+        if (Diff > EPSILON)
         {
-            if (mismatch_count < 10) // Limit error reporting
+            if (MismatchCount < 10) // Limit error reporting
             {
-                printf("  Mismatch at index %d: %s=%.6f, %s=%.6f, diff=%.6f\n", i, name1, result1[i], name2, result2[i],
-                       diff);
+                printf("  Mismatch at index %d: %s=%.6f, %s=%.6f, diff=%.6f\n", I, Name1, Result1[I], Name2, Result2[I],
+                       Diff);
             }
-            match = false;
-            mismatch_count++;
+            Match = false;
+            MismatchCount++;
         }
     }
 
-    printf("  Maximum difference: %.6f\n", max_diff);
-    if (mismatch_count > 0)
+    printf("  Maximum difference: %.6f\n", MaxDiff);
+    if (MismatchCount > 0)
     {
-        printf("  Total mismatches: %d out of %d elements\n", mismatch_count, n);
+        printf("  Total mismatches: %d out of %d elements\n", MismatchCount, N);
     }
 
-    return match;
+    return Match;
 }
 
 // Debug function to print memory state
-void debugMemoryState(float *h_a, float *h_b, float *h_result, int start_idx, int count, const char *label)
+void DebugMemoryState(float *HA, float *HB, float *HResult, int StartIdx, int Count, const char *Label)
 {
-    printf("\n%s - Memory State (elements %d to %d):\n", label, start_idx, start_idx + count - 1);
+    printf("\n%s - Memory State (elements %d to %d):\n", Label, StartIdx, StartIdx + Count - 1);
     printf("Index |   A     |   B     | Result  | Expected\n");
     printf("------|---------|---------|---------|----------\n");
 
-    for (int i = start_idx; i < start_idx + count && i < VECTOR_SIZE; i++)
+    for (int I = StartIdx; I < StartIdx + Count && I < VECTOR_SIZE; I++)
     {
-        float expected = (h_a[i] + h_b[i]) * 2.0f;
-        expected = expected * expected;
-        printf("%5d | %7.6f | %7.6f | %7.6f | %8.6f\n", i, h_a[i], h_b[i], h_result[i], expected);
+        float Expected = (HA[I] + HB[I]) * 2.0f;
+        Expected = Expected * Expected;
+        printf("%5d | %7.6f | %7.6f | %7.6f | %8.6f\n", I, HA[I], HB[I], HResult[I], Expected);
     }
 }
 
@@ -240,78 +240,78 @@ int main()
     printf("============================================\n");
 
     // Allocate host memory
-    float *h_a = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_b = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_result_traditional = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_result_graph = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HA = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HB = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HResultTraditional = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HResultGraph = (float *)malloc(VECTOR_SIZE * sizeof(float));
 
     // Initialize input data
-    for (int i = 0; i < VECTOR_SIZE; i++)
+    for (int I = 0; I < VECTOR_SIZE; I++)
     {
-        h_a[i] = (float)i / 1000.0f;
-        h_b[i] = (float)(i + 1) / 1000.0f;
+        HA[I] = (float)I / 1000.0f;
+        HB[I] = (float)(I + 1) / 1000.0f;
     }
 
     // Allocate device memory
-    float *d_a, *d_b, *d_c, *d_temp;
-    cudaMalloc(&d_a, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_b, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_c, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_temp, VECTOR_SIZE * sizeof(float));
+    float *DA, *DB, *DC, *DTemp;
+    cudaMalloc(&DA, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DB, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DC, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DTemp, VECTOR_SIZE * sizeof(float));
 
     // Copy input data to device
-    cudaMemcpy(d_a, h_a, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, h_b, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DA, HA, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DB, HB, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
 
     // Run traditional kernel launches
     printf("Running traditional kernel launches...\n");
-    float time_traditional = runTraditionalLaunches(d_a, d_b, d_c, d_temp, VECTOR_SIZE);
-    cudaMemcpy(h_result_traditional, d_c, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
+    float TimeTraditional = RunTraditionalLaunches(DA, DB, DC, DTemp, VECTOR_SIZE);
+    cudaMemcpy(HResultTraditional, DC, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
     // Run CUDA Graphs
     printf("Running CUDA Graphs...\n");
-    float time_graph = runCudaGraphs(d_a, d_b, d_c, d_temp, VECTOR_SIZE);
-    cudaMemcpy(h_result_graph, d_c, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
+    float TimeGraph = RunCudaGraphs(DA, DB, DC, DTemp, VECTOR_SIZE);
+    cudaMemcpy(HResultGraph, DC, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
     // Print performance results
     printf("\nPerformance Results:\n");
-    printf("Traditional launches: %8.2f ms\n", time_traditional);
-    printf("CUDA Graphs:         %8.2f ms\n", time_graph);
-    printf("Speedup:             %8.2fx\n", time_traditional / time_graph);
-    printf("Overhead reduction:  %8.2f%%\n", 100.0f * (time_traditional - time_graph) / time_traditional);
+    printf("Traditional launches: %8.2f ms\n", TimeTraditional);
+    printf("CUDA Graphs:         %8.2f ms\n", TimeGraph);
+    printf("Speedup:             %8.2fx\n", TimeTraditional / TimeGraph);
+    printf("Overhead reduction:  %8.2f%%\n", 100.0f * (TimeTraditional - TimeGraph) / TimeTraditional);
 
     // Verify correctness with fixed verification function
     printf("\nDetailed Verification (FIXED):\n");
-    bool traditional_correct = verifyResults(h_a, h_b, h_result_traditional, VECTOR_SIZE, "Traditional");
-    bool graph_correct = verifyResults(h_a, h_b, h_result_graph, VECTOR_SIZE, "Graph");
+    bool TraditionalCorrect = VerifyResults(HA, HB, HResultTraditional, VECTOR_SIZE, "Traditional");
+    bool GraphCorrect = VerifyResults(HA, HB, HResultGraph, VECTOR_SIZE, "Graph");
 
     printf("\nFinal Results:\n");
-    printf("Traditional results: %s\n", traditional_correct ? "CORRECT" : "INCORRECT");
-    printf("Graph results:       %s\n", graph_correct ? "CORRECT" : "INCORRECT");
+    printf("Traditional results: %s\n", TraditionalCorrect ? "CORRECT" : "INCORRECT");
+    printf("Graph results:       %s\n", GraphCorrect ? "CORRECT" : "INCORRECT");
 
     // Compare results between methods with fixed comparison
     printf("\nResult Comparison (FIXED):\n");
-    bool results_match = compareResults(h_result_traditional, h_result_graph, VECTOR_SIZE, "Traditional", "Graph");
-    printf("Results match:       %s\n", results_match ? "YES" : "NO");
+    bool ResultsMatch = CompareResults(HResultTraditional, HResultGraph, VECTOR_SIZE, "Traditional", "Graph");
+    printf("Results match:       %s\n", ResultsMatch ? "YES" : "NO");
 
     // Debug memory state for first few elements
-    debugMemoryState(h_a, h_b, h_result_traditional, 0, 5, "Traditional Results");
-    debugMemoryState(h_a, h_b, h_result_graph, 0, 5, "Graph Results");
+    DebugMemoryState(HA, HB, HResultTraditional, 0, 5, "Traditional Results");
+    DebugMemoryState(HA, HB, HResultGraph, 0, 5, "Graph Results");
 
     // Check for edge cases - test with some specific indices
     printf("\nEdge Case Analysis:\n");
-    int test_indices[] = {0, 1, VECTOR_SIZE / 2, VECTOR_SIZE - 2, VECTOR_SIZE - 1};
-    int num_test_indices = sizeof(test_indices) / sizeof(test_indices[0]);
+    int TestIndices[] = {0, 1, VECTOR_SIZE / 2, VECTOR_SIZE - 2, VECTOR_SIZE - 1};
+    int NumTestIndices = sizeof(TestIndices) / sizeof(TestIndices[0]);
 
-    for (int i = 0; i < num_test_indices; i++)
+    for (int I = 0; I < NumTestIndices; I++)
     {
-        int idx = test_indices[i];
-        if (idx < VECTOR_SIZE)
+        int Idx = TestIndices[I];
+        if (Idx < VECTOR_SIZE)
         {
-            float expected = (h_a[idx] + h_b[idx]) * 2.0f;
-            expected = expected * expected;
-            printf("Index %d: Traditional=%.6f, Graph=%.6f, Expected=%.6f\n", idx, h_result_traditional[idx],
-                   h_result_graph[idx], expected);
+            float Expected = (HA[Idx] + HB[Idx]) * 2.0f;
+            Expected = Expected * Expected;
+            printf("Index %d: Traditional=%.6f, Graph=%.6f, Expected=%.6f\n", Idx, HResultTraditional[Idx],
+                   HResultGraph[Idx], Expected);
         }
     }
 
@@ -322,14 +322,14 @@ int main()
     printf("4. Added edge case testing\n");
 
     // Cleanup
-    free(h_a);
-    free(h_b);
-    free(h_result_traditional);
-    free(h_result_graph);
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
-    cudaFree(d_temp);
+    free(HA);
+    free(HB);
+    free(HResultTraditional);
+    free(HResultGraph);
+    cudaFree(DA);
+    cudaFree(DB);
+    cudaFree(DC);
+    cudaFree(DTemp);
 
     return 0;
 }

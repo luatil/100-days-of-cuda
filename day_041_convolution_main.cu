@@ -44,32 +44,32 @@ typedef enum
     FILTER_EMBOSS,
     FILTER_BLUR,
     FILTER_IDENTITY
-} FilterType;
+} filter_type;
 
 typedef struct
 {
-    FilterType filter;
-    float scale;
-    float bias;
-    int verbose;
-    char *input_file;
-    char *output_file;
-} Options;
+    filter_type Filter;
+    float Scale;
+    float Bias;
+    int Verbose;
+    char *InputFile;
+    char *OutputFile;
+} options;
 
 // Predefined convolution kernels
-float edge_kernel[9] = {-1, -1, -1, -1, 8, -1, -1, -1, -1};
+float EdgeKernel[9] = {-1, -1, -1, -1, 8, -1, -1, -1, -1};
 
-float sharpen_kernel[9] = {0, -1, 0, -1, 5, -1, 0, -1, 0};
+float SharpenKernel[9] = {0, -1, 0, -1, 5, -1, 0, -1, 0};
 
-float emboss_kernel[9] = {-2, -1, 0, -1, 1, 1, 0, 1, 2};
+float EmbossKernel[9] = {-2, -1, 0, -1, 1, 1, 0, 1, 2};
 
-float blur_kernel[9] = {1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9};
+float BlurKernel[9] = {1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9, 1.0f / 9};
 
-float identity_kernel[9] = {0, 0, 0, 0, 1, 0, 0, 0, 0};
+float IdentityKernel[9] = {0, 0, 0, 0, 1, 0, 0, 0, 0};
 
-static void PrintUsage(const char *program_name)
+static void PrintUsage(const char *ProgramName)
 {
-    printf("Usage: %s [OPTION]... INPUT_FILE OUTPUT_FILE\n", program_name);
+    printf("Usage: %s [OPTION]... INPUT_FILE OUTPUT_FILE\n", ProgramName);
     printf("Applies convolution filters to images using CUDA acceleration.\n\n");
     printf("Options:\n");
     printf("  -f, --filter=FILTER    filter to apply (edge, sharpen, emboss, blur, identity)\n");
@@ -79,53 +79,53 @@ static void PrintUsage(const char *program_name)
     printf("      --help             display this help and exit\n");
 }
 
-static FilterType ParseFilter(const char *filter_str)
+static filter_type ParseFilter(const char *FilterStr)
 {
-    if (strcmp(filter_str, "edge") == 0)
+    if (strcmp(FilterStr, "edge") == 0)
         return FILTER_EDGE;
-    if (strcmp(filter_str, "sharpen") == 0)
+    if (strcmp(FilterStr, "sharpen") == 0)
         return FILTER_SHARPEN;
-    if (strcmp(filter_str, "emboss") == 0)
+    if (strcmp(FilterStr, "emboss") == 0)
         return FILTER_EMBOSS;
-    if (strcmp(filter_str, "blur") == 0)
+    if (strcmp(FilterStr, "blur") == 0)
         return FILTER_BLUR;
-    if (strcmp(filter_str, "identity") == 0)
+    if (strcmp(FilterStr, "identity") == 0)
         return FILTER_IDENTITY;
 
-    fprintf(stderr, "Error: Unknown filter '%s'\n", filter_str);
+    fprintf(stderr, "Error: Unknown filter '%s'\n", FilterStr);
     fprintf(stderr, "Available filters: edge, sharpen, emboss, blur, identity\n");
     exit(EXIT_FAILURE);
 }
 
-static Options ParseCommandLine(int argc, char *argv[])
+static options ParseCommandLine(int Argc, char *Argv[])
 {
-    Options opts = {FILTER_EDGE, 1.0f, 0.0f, 0, NULL, NULL};
+    options Opts = {FILTER_EDGE, 1.0f, 0.0f, 0, NULL, NULL};
 
-    static struct option long_options[] = {{"filter", required_argument, 0, 'f'}, {"scale", required_argument, 0, 's'},
+    static struct option LongOptions[] = {{"filter", required_argument, 0, 'f'}, {"scale", required_argument, 0, 's'},
                                            {"bias", required_argument, 0, 'b'},   {"verbose", no_argument, 0, 'v'},
                                            {"help", no_argument, 0, 'h'},         {0, 0, 0, 0}};
 
-    int option_index = 0;
-    int c;
+    int OptionIndex = 0;
+    int C;
 
-    while ((c = getopt_long(argc, argv, "f:s:b:vh", long_options, &option_index)) != -1)
+    while ((C = getopt_long(Argc, Argv, "f:s:b:vh", LongOptions, &OptionIndex)) != -1)
     {
-        switch (c)
+        switch (C)
         {
         case 'f':
-            opts.filter = ParseFilter(optarg);
+            Opts.Filter = ParseFilter(optarg);
             break;
         case 's':
-            opts.scale = atof(optarg);
+            Opts.Scale = atof(optarg);
             break;
         case 'b':
-            opts.bias = atof(optarg);
+            Opts.Bias = atof(optarg);
             break;
         case 'v':
-            opts.verbose = 1;
+            Opts.Verbose = 1;
             break;
         case 'h':
-            PrintUsage(argv[0]);
+            PrintUsage(Argv[0]);
             exit(EXIT_SUCCESS);
         case '?':
             exit(EXIT_FAILURE);
@@ -134,41 +134,41 @@ static Options ParseCommandLine(int argc, char *argv[])
         }
     }
 
-    if (optind + 2 != argc)
+    if (optind + 2 != Argc)
     {
         fprintf(stderr, "Error: INPUT_FILE and OUTPUT_FILE are required\n");
-        PrintUsage(argv[0]);
+        PrintUsage(Argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    opts.input_file = argv[optind];
-    opts.output_file = argv[optind + 1];
+    Opts.InputFile = Argv[optind];
+    Opts.OutputFile = Argv[optind + 1];
 
-    return opts;
+    return Opts;
 }
 
-static float *GetKernel(FilterType filter)
+static float *GetKernel(filter_type Filter)
 {
-    switch (filter)
+    switch (Filter)
     {
     case FILTER_EDGE:
-        return edge_kernel;
+        return EdgeKernel;
     case FILTER_SHARPEN:
-        return sharpen_kernel;
+        return SharpenKernel;
     case FILTER_EMBOSS:
-        return emboss_kernel;
+        return EmbossKernel;
     case FILTER_BLUR:
-        return blur_kernel;
+        return BlurKernel;
     case FILTER_IDENTITY:
-        return identity_kernel;
+        return IdentityKernel;
     default:
-        return identity_kernel;
+        return IdentityKernel;
     }
 }
 
-static const char *GetFilterName(FilterType filter)
+static const char *GetFilterName(filter_type Filter)
 {
-    switch (filter)
+    switch (Filter)
     {
     case FILTER_EDGE:
         return "edge";
@@ -187,100 +187,100 @@ static const char *GetFilterName(FilterType filter)
 
 int main(int argc, char *argv[])
 {
-    Options opts = ParseCommandLine(argc, argv);
+    options Opts = ParseCommandLine(argc, argv);
 
-    struct timespec start_time, end_time;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    struct timespec StartTime, EndTime;
+    clock_gettime(CLOCK_MONOTONIC, &StartTime);
 
     // Load input image
-    int width, height, channels;
-    unsigned char *h_input = stbi_load(opts.input_file, &width, &height, &channels, 0);
+    int Width, Height, Channels;
+    unsigned char *HInput = stbi_load(Opts.InputFile, &Width, &Height, &Channels, 0);
 
-    if (!h_input)
+    if (!HInput)
     {
-        fprintf(stderr, "Error: Could not load image '%s'\n", opts.input_file);
+        fprintf(stderr, "Error: Could not load image '%s'\n", Opts.InputFile);
         exit(EXIT_FAILURE);
     }
 
-    if (opts.verbose)
+    if (Opts.Verbose)
     {
-        printf("Loaded image: %dx%d, %d channels\n", width, height, channels);
-        printf("Filter: %s (scale=%.2f, bias=%.2f)\n", GetFilterName(opts.filter), opts.scale, opts.bias);
+        printf("Loaded image: %dx%d, %d channels\n", Width, Height, Channels);
+        printf("Filter: %s (scale=%.2f, bias=%.2f)\n", GetFilterName(Opts.Filter), Opts.Scale, Opts.Bias);
     }
 
     // Allocate host output
-    size_t image_size = width * height * channels;
-    unsigned char *h_output = (unsigned char *)malloc(image_size);
-    if (!h_output)
+    size_t ImageSize = Width * Height * Channels;
+    unsigned char *HOutput = (unsigned char *)malloc(ImageSize);
+    if (!HOutput)
     {
         fprintf(stderr, "Error: Could not allocate output buffer\n");
-        stbi_image_free(h_input);
+        stbi_image_free(HInput);
         exit(EXIT_FAILURE);
     }
 
     // Allocate device memory
-    unsigned char *d_input, *d_output;
-    cudaMalloc(&d_input, image_size);
-    cudaMalloc(&d_output, image_size);
+    unsigned char *DInput, *DOutput;
+    cudaMalloc(&DInput, ImageSize);
+    cudaMalloc(&DOutput, ImageSize);
 
     // Copy input to device
-    cudaMemcpy(d_input, h_input, image_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(DInput, HInput, ImageSize, cudaMemcpyHostToDevice);
 
-    struct timespec process_start;
-    clock_gettime(CLOCK_MONOTONIC, &process_start);
+    struct timespec ProcessStart;
+    clock_gettime(CLOCK_MONOTONIC, &ProcessStart);
 
     // Apply convolution
-    float *kernel = GetKernel(opts.filter);
-    LaunchConvolution(d_input, d_output, width, height, channels, kernel, 3, opts.scale, opts.bias);
+    float *Kernel = GetKernel(Opts.Filter);
+    LaunchConvolution(DInput, DOutput, Width, Height, Channels, Kernel, 3, Opts.Scale, Opts.Bias);
 
-    struct timespec process_end;
-    clock_gettime(CLOCK_MONOTONIC, &process_end);
+    struct timespec ProcessEnd;
+    clock_gettime(CLOCK_MONOTONIC, &ProcessEnd);
 
     // Copy result back to host
-    cudaMemcpy(h_output, d_output, image_size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(HOutput, DOutput, ImageSize, cudaMemcpyDeviceToHost);
 
     // Save output image
-    int result;
-    if (strstr(opts.output_file, ".png") || strstr(opts.output_file, ".PNG"))
+    int Result;
+    if (strstr(Opts.OutputFile, ".png") || strstr(Opts.OutputFile, ".PNG"))
     {
-        result = stbi_write_png(opts.output_file, width, height, channels, h_output, width * channels);
+        Result = stbi_write_png(Opts.OutputFile, Width, Height, Channels, HOutput, Width * Channels);
     }
-    else if (strstr(opts.output_file, ".jpg") || strstr(opts.output_file, ".jpeg") ||
-             strstr(opts.output_file, ".JPG") || strstr(opts.output_file, ".JPEG"))
+    else if (strstr(Opts.OutputFile, ".jpg") || strstr(Opts.OutputFile, ".jpeg") ||
+             strstr(Opts.OutputFile, ".JPG") || strstr(Opts.OutputFile, ".JPEG"))
     {
-        result = stbi_write_jpg(opts.output_file, width, height, channels, h_output, 90);
+        Result = stbi_write_jpg(Opts.OutputFile, Width, Height, Channels, HOutput, 90);
     }
     else
     {
-        result = stbi_write_png(opts.output_file, width, height, channels, h_output, width * channels);
+        Result = stbi_write_png(Opts.OutputFile, Width, Height, Channels, HOutput, Width * Channels);
     }
 
-    if (!result)
+    if (!Result)
     {
-        fprintf(stderr, "Error: Could not save image '%s'\n", opts.output_file);
+        fprintf(stderr, "Error: Could not save image '%s'\n", Opts.OutputFile);
         exit(EXIT_FAILURE);
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    clock_gettime(CLOCK_MONOTONIC, &EndTime);
 
-    if (opts.verbose)
+    if (Opts.Verbose)
     {
-        double total_time = (end_time.tv_sec - start_time.tv_sec) + (end_time.tv_nsec - start_time.tv_nsec) / 1e9;
-        double process_time =
-            (process_end.tv_sec - process_start.tv_sec) + (process_end.tv_nsec - process_start.tv_nsec) / 1e9;
-        double data_mb = (image_size * 2) / (1024.0 * 1024.0);
+        double TotalTime = (EndTime.tv_sec - StartTime.tv_sec) + (EndTime.tv_nsec - StartTime.tv_nsec) / 1e9;
+        double ProcessTime =
+            (ProcessEnd.tv_sec - ProcessStart.tv_sec) + (ProcessEnd.tv_nsec - ProcessStart.tv_nsec) / 1e9;
+        double DataMb = (ImageSize * 2) / (1024.0 * 1024.0);
 
-        printf("Processing time  : %.6f sec\n", process_time);
-        printf("Total time       : %.6f sec\n", total_time);
-        printf("Throughput       : %.2f MB/s\n", data_mb / process_time);
-        printf("Image saved to   : %s\n", opts.output_file);
+        printf("Processing time  : %.6f sec\n", ProcessTime);
+        printf("Total time       : %.6f sec\n", TotalTime);
+        printf("Throughput       : %.2f MB/s\n", DataMb / ProcessTime);
+        printf("Image saved to   : %s\n", Opts.OutputFile);
     }
 
     // Cleanup
-    stbi_image_free(h_input);
-    free(h_output);
-    cudaFree(d_input);
-    cudaFree(d_output);
+    stbi_image_free(HInput);
+    free(HOutput);
+    cudaFree(DInput);
+    cudaFree(DOutput);
 
     return 0;
 }

@@ -53,34 +53,34 @@ struct ray
 
 struct image
 {
-    u8 *m_Data;
-    u32 m_Width;
-    u32 m_Height;
+    u8 *MData;
+    u32 MWidth;
+    u32 MHeight;
 
     image(u32 Width, u32 Height)
     {
-        m_Width = Width;
-        m_Height = Height;
-        cudaMalloc(&this->m_Data, Width * Height * sizeof(u8));
+        MWidth = Width;
+        MHeight = Height;
+        cudaMalloc(&this->MData, Width * Height * sizeof(u8));
         this->Clear();
     }
 
     void Clear()
     {
-        cudaMemset(this->m_Data, 0, this->m_Width * this->m_Height * sizeof(u8));
+        cudaMemset(this->MData, 0, this->MWidth * this->MHeight * sizeof(u8));
     }
 
     void Save(const char *Filename)
     {
-        u8 *Image = (u8 *)malloc(sizeof(u8) * m_Width * m_Height);
-        cudaMemcpy(Image, m_Data, sizeof(u8) * m_Width * m_Height, cudaMemcpyDeviceToHost);
-        stbi_write_jpg(Filename, m_Width, m_Height, 1, Image, 100);
+        u8 *Image = (u8 *)malloc(sizeof(u8) * MWidth * MHeight);
+        cudaMemcpy(Image, MData, sizeof(u8) * MWidth * MHeight, cudaMemcpyDeviceToHost);
+        stbi_write_jpg(Filename, MWidth, MHeight, 1, Image, 100);
         free(Image);
     }
 
     ~image()
     {
-        cudaFree(this->m_Data);
+        cudaFree(this->MData);
     }
 };
 
@@ -140,9 +140,9 @@ __global__ void RenderScene(u8 *Image, scene SceneData, u32 Width, u32 Height)
         f32 Background = (f32)Image[Row * Width + Col];
         f32 FinalColor = Background;
 
-        for (u32 i = 0; i < SceneData.Count; i++)
+        for (u32 I = 0; I < SceneData.Count; I++)
         {
-            primitive Prim = SceneData.Primitives[i];
+            primitive Prim = SceneData.Primitives[I];
             f32 Alpha = 0.0f;
 
             if (Prim.Type == PRIMITIVE_CIRCLE)
@@ -191,19 +191,18 @@ static void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrim
 
     vec2<f32> *CircleCenters = (vec2<f32> *)malloc(sizeof(vec2<f32>) * NumCircles);
 
-    for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
     {
         vec2<f32> Center = {RandomFloat(0.1f, 0.9f), RandomFloat(0.1f, 0.9f)};
         f32 Radius = RandomFloat(0.02f, 0.03f);
         u8 Color = RandomColor(10, 250);
 
-        CircleCenters[i] = Center;
+        CircleCenters[I] = Center;
         Primitives[Count++] = CreateCircle(Center, Radius, Color);
     }
 
     free(CircleCenters);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -220,19 +219,19 @@ int main(int argc, char *argv[])
     u32 NumCircles = 256;
     GenerateRandomCircles(Primitives, PrimitiveCount, MaxPrimitives, NumCircles);
 
-    primitive *d_Primitives;
-    cudaMalloc(&d_Primitives, sizeof(primitive) * PrimitiveCount);
-    cudaMemcpy(d_Primitives, Primitives, sizeof(primitive) * PrimitiveCount, cudaMemcpyHostToDevice);
+    primitive *DPrimitives;
+    cudaMalloc(&DPrimitives, sizeof(primitive) * PrimitiveCount);
+    cudaMemcpy(DPrimitives, Primitives, sizeof(primitive) * PrimitiveCount, cudaMemcpyHostToDevice);
 
-    scene SceneData = {d_Primitives, PrimitiveCount};
+    scene SceneData = {DPrimitives, PrimitiveCount};
 
     dim3 BlockDim(16, 16);
     dim3 GridDim((Opts.Width + 16 - 1) / 16, (Opts.Height + 16 - 1) / 16);
 
-    RenderScene<<<GridDim, BlockDim>>>(Image.m_Data, SceneData, Opts.Width, Opts.Height);
+    RenderScene<<<GridDim, BlockDim>>>(Image.MData, SceneData, Opts.Width, Opts.Height);
 
     Image.Save("temp.jpg");
 
     free(Primitives);
-    cudaFree(d_Primitives);
+    cudaFree(DPrimitives);
 }

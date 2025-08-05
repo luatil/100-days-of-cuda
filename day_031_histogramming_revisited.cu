@@ -5,60 +5,63 @@
 #include "solve.h"
 #include <cuda_runtime.h>
 #endif
-#include <cmath>
 #include <cfloat>
+#include <cmath>
 
 #ifdef NO_GPU
-#define __global__ 
-#define __shared__
-#define __syncthreads()
-#define atomicAdd(_a, _b)
+#define GLOBAL
+#define SHARED
+#define SYNCTHREADS()
+#define ATOMIC_ADD(_a, _b)
 
-struct dim3 {
+struct dim3
+{
     int x;
     int y;
     int z;
 };
 
-dim3 threadIdx;
-dim3 blockDim;
-dim3 blockIdx;
+dim3 ThreadIdx;
+dim3 BlockDim;
+dim3 BlockIdx;
 #endif
 
 typedef unsigned int u32;
 
 #define MAX_NUM_BINS 1024
 
-__global__ void HistogramKernel(const int* input, int* histogram, int N, int num_bins) 
+GLOBAL void HistogramKernel(const int *Input, int *Histogram, int N, int NumBins)
 {
-    __shared__ int Shared[MAX_NUM_BINS];
+    SHARED int Shared[MAX_NUM_BINS];
 
-    for (int i = threadIdx.x; i < num_bins; i += blockDim.x)
+    for (int I = threadIdx.x; I < NumBins; I += blockDim.x)
     {
-        Shared[i] = 0;
+        Shared[I] = 0;
     }
-    __syncthreads();
+    SYNCTHREADS();
 
     u32 Tid = blockDim.x * blockIdx.x + threadIdx.x;
     if (Tid < N)
     {
-        int Pos = input[Tid];
-        atomicAdd(Shared + Pos, 1); 
+        int Pos = Input[Tid];
+        ATOMIC_ADD(Shared + Pos, 1);
     }
-    __syncthreads();
+    SYNCTHREADS();
 
-    for (int bin = threadIdx.x; bin < num_bins; bin += blockDim.x)
+    for (int Bin = threadIdx.x; Bin < NumBins; Bin += blockDim.x)
     {
-        int BinValue = Shared[bin];
-        if (BinValue > 0) {
-            atomicAdd(histogram + bin, BinValue);
+        int BinValue = Shared[Bin];
+        if (BinValue > 0)
+        {
+            ATOMIC_ADD(histogram + bin, BinValue);
         }
     }
 }
 
 #ifndef LEET_GPU_NOIMPORT
 // input, histogram are device pointers
-void solve(const int* input, int* histogram, int N, int num_bins) {
+void solve(const int *input, int *histogram, int N, int num_bins)
+{
     const int BlockDim = 256;
     const int GridDim = (N + BlockDim - 1) / BlockDim;
     HistogramKernel<<<GridDim, BlockDim>>>(input, histogram, N, num_bins);

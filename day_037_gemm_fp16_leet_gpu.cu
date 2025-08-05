@@ -2,7 +2,7 @@
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
 
-__global__ void GEMM_FP16(const half *A, const half *B, half *C, int M, int N, int K, float alpha, float beta)
+__global__ void GemmFP16(const half *A, const half *B, half *C, int M, int N, int K, float Alpha, float Beta)
 {
     int Col = blockDim.x * blockIdx.x + threadIdx.x;
     int Row = blockDim.y * blockIdx.y + threadIdx.y;
@@ -10,20 +10,20 @@ __global__ void GEMM_FP16(const half *A, const half *B, half *C, int M, int N, i
     if (Col < N && Row < M)
     {
         float Res = 0.0f;
-        for (int k = 0; k < K; k++)
+        for (int K = 0; K < K; K++)
         {
-            Res += __half2float(A[Row * K + k]) * __half2float(B[Col + k * N]);
+            Res += __half2float(A[Row * K + K]) * __half2float(B[Col + K * N]);
         }
-        Res *= alpha;
-        Res += beta * __half2float(C[Row * N + Col]);
+        Res *= Alpha;
+        Res += Beta * __half2float(C[Row * N + Col]);
         C[Row * N + Col] = __float2half(Res);
     }
 }
 
 // A, B, and C are device pointers
-void solve(const half *A, const half *B, half *C, int M, int N, int K, float alpha, float beta)
+void Solve(const half *A, const half *B, half *C, int M, int N, int K, float Alpha, float Beta)
 {
     dim3 BlockDim(32, 32);
     dim3 GridDim((M + 32 - 1) / 32, (N + 32 - 1) / 32);
-    GEMM_FP16<<<GridDim, BlockDim>>>(A, B, C, M, N, K, alpha, beta);
+    GemmFP16<<<GridDim, BlockDim>>>(A, B, C, M, N, K, Alpha, Beta);
 }

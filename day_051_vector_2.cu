@@ -103,7 +103,7 @@ template <typename T> struct vec2
         return !(*this == Other);
     }
 
-    __device__ __host__ T dot(const vec2 &Other) const
+    __device__ __host__ T Dot(const vec2 &Other) const
     {
         return X * Other.X + Y * Other.Y;
     }

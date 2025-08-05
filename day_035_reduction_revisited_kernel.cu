@@ -4,42 +4,42 @@
 #define BLOCK_DIM 1024
 #define COARSE_FACTOR 4
 
-__global__ void ReduceKernel(const float *input, float *output, int N)
+__global__ void ReduceKernel(const float *Input, float *Output, int N)
 {
     __shared__ float Shared[BLOCK_DIM];
 
-    const int Tid = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
-    const int Tx = threadIdx.x;
+    const int TID = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
+    const int TX = threadIdx.x;
 
-    Shared[Tx] = 0.0f;
-    for (int i = 0; i < COARSE_FACTOR; i++)
+    Shared[TX] = 0.0f;
+    for (int I = 0; I < COARSE_FACTOR; I++)
     {
-        if (Tid + blockDim.x * i < N)
+        if (TID + blockDim.x * I < N)
         {
-            Shared[Tx] += input[Tid + blockDim.x * i];
+            Shared[TX] += Input[TID + blockDim.x * I];
         }
     }
     __syncthreads();
 
     for (int Stride = blockDim.x / 2; Stride > 0; Stride /= 2)
     {
-        if (Tx < Stride)
+        if (TX < Stride)
         {
-            Shared[Tx] += Shared[Tx + Stride];
+            Shared[TX] += Shared[TX + Stride];
         }
         __syncthreads();
     }
 
-    if (Tx == 0)
+    if (TX == 0)
     {
-        atomicAdd(output, Shared[0]);
+        atomicAdd(Output, Shared[0]);
     }
 }
 
 // input, output are device pointers
-void solve(const float *input, float *output, int N)
+void Solve(const float *Input, float *Output, int N)
 {
     const int BlockDim = BLOCK_DIM;
-    const int GridDim = (N + BlockDim - 1) / BlockDim;
-    ReduceKernel<<<GridDim, BlockDim>>>(input, output, N);
+    const int GRID_DIM = (N + BlockDim - 1) / BlockDim;
+    ReduceKernel<<<GRID_DIM, BlockDim>>>(Input, Output, N);
 }

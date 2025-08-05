@@ -91,17 +91,17 @@ __global__ void DivideScalarKernel(float *A, float *B, float X, int N)
 
 __global__ void MatMulKernel(float *A, float *B, float *C, int M, int N, int K)
 {
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (row < M && col < N)
+    if (Row < M && Col < N)
     {
-        float sum = 0.0f;
-        for (int k = 0; k < K; k++)
+        float Sum = 0.0f;
+        for (int K = 0; K < K; K++)
         {
-            sum += A[row * K + k] * B[k * N + col];
+            Sum += A[Row * K + K] * B[K * N + Col];
         }
-        C[row * N + col] = sum;
+        C[Row * N + Col] = Sum;
     }
 }
 
@@ -112,47 +112,47 @@ __device__ __host__ int Ceil(int Num, int Den)
 
 struct tensor
 {
-    float *m_Data;
-    int m_Dims[MAX_TENSOR_DIMS];
-    int m_NDims;
-    size_t m_Size;
+    float *MData;
+    int MDims[MAX_TENSOR_DIMS];
+    int MNDims;
+    size_t MSize;
 
-    template <typename... Args> tensor(Args... values)
+    template <typename... Args> tensor(Args... Values)
     {
         static_assert(sizeof...(Args) > 0, "Must provide at least one value");
 
-        m_NDims = 1;
-        m_Dims[0] = sizeof...(Args);
-        m_Size = sizeof...(Args);
+        MNDims = 1;
+        MDims[0] = sizeof...(Args);
+        MSize = sizeof...(Args);
 
-        cudaMalloc(&m_Data, m_Size * sizeof(float));
+        cudaMalloc(&MData, MSize * sizeof(float));
 
-        float host_data[] = {static_cast<float>(values)...};
-        cudaMemcpy(m_Data, host_data, m_Size * sizeof(float), cudaMemcpyHostToDevice);
+        float HostData[] = {static_cast<float>(Values)...};
+        cudaMemcpy(MData, HostData, MSize * sizeof(float), cudaMemcpyHostToDevice);
     }
 
-    tensor(tensor &&other) noexcept : m_Data(other.m_Data), m_NDims(other.m_NDims), m_Size(other.m_Size)
+    tensor(tensor &&Other) noexcept : MData(Other.MData), MNDims(Other.MNDims), MSize(Other.MSize)
     {
-        for (int i = 0; i < m_NDims; i++)
+        for (int I = 0; I < MNDims; I++)
         {
-            m_Dims[i] = other.m_Dims[i];
+            MDims[I] = Other.MDims[I];
         }
-        other.m_Data = nullptr;
+        Other.MData = nullptr;
     }
 
-    tensor &operator=(tensor &&other) noexcept
+    tensor &operator=(tensor &&Other) noexcept
     {
-        if (this != &other)
+        if (this != &Other)
         {
-            cudaFree(m_Data);
-            m_Data = other.m_Data;
-            m_NDims = other.m_NDims;
-            m_Size = other.m_Size;
-            for (int i = 0; i < m_NDims; i++)
+            cudaFree(MData);
+            MData = Other.MData;
+            MNDims = Other.MNDims;
+            MSize = Other.MSize;
+            for (int I = 0; I < MNDims; I++)
             {
-                m_Dims[i] = other.m_Dims[i];
+                MDims[I] = Other.MDims[I];
             }
-            other.m_Data = nullptr;
+            Other.MData = nullptr;
         }
         return *this;
     }
@@ -162,63 +162,63 @@ struct tensor
 
     ~tensor()
     {
-        if (m_Data)
+        if (MData)
         {
-            cudaFree(m_Data);
+            cudaFree(MData);
         }
     }
 
     size_t Size()
     {
         size_t Result = 1;
-        for (int I = 0; I < m_NDims; I++)
+        for (int I = 0; I < MNDims; I++)
         {
-            Result *= m_Dims[I];
+            Result *= MDims[I];
         }
         return Result;
     }
 
-    float *data() const
+    float *Data() const
     {
-        return m_Data;
+        return MData;
     }
 
     void Print() const
     {
-        if (!m_Data || m_Size == 0)
+        if (!MData || MSize == 0)
         {
             printf("[]\n");
             return;
         }
 
-        float *host_data = (float *)malloc(m_Size * sizeof(float));
-        cudaMemcpy(host_data, m_Data, m_Size * sizeof(float), cudaMemcpyDeviceToHost);
+        float *HostData = (float *)malloc(MSize * sizeof(float));
+        cudaMemcpy(HostData, MData, MSize * sizeof(float), cudaMemcpyDeviceToHost);
 
-        if (m_NDims == 1)
+        if (MNDims == 1)
         {
             printf("[");
-            for (size_t i = 0; i < m_Size; i++)
+            for (size_t I = 0; I < MSize; I++)
             {
-                printf("%.1f", host_data[i]);
-                if (i < m_Size - 1)
+                printf("%.1f", HostData[I]);
+                if (I < MSize - 1)
                     printf(", ");
             }
             printf("]\n");
         }
-        else if (m_NDims == 2)
+        else if (MNDims == 2)
         {
             printf("[");
-            for (int i = 0; i < m_Dims[0]; i++)
+            for (int I = 0; I < MDims[0]; I++)
             {
                 printf("[");
-                for (int j = 0; j < m_Dims[1]; j++)
+                for (int J = 0; J < MDims[1]; J++)
                 {
-                    printf("%.1f", host_data[i * m_Dims[1] + j]);
-                    if (j < m_Dims[1] - 1)
+                    printf("%.1f", HostData[I * MDims[1] + J]);
+                    if (J < MDims[1] - 1)
                         printf(", ");
                 }
                 printf("]");
-                if (i < m_Dims[0] - 1)
+                if (I < MDims[0] - 1)
                     printf(", ");
             }
             printf("]\n");
@@ -226,181 +226,181 @@ struct tensor
         else
         {
             printf("Shape: (");
-            for (int i = 0; i < m_NDims; i++)
+            for (int I = 0; I < MNDims; I++)
             {
-                printf("%d", m_Dims[i]);
-                if (i < m_NDims - 1)
+                printf("%d", MDims[I]);
+                if (I < MNDims - 1)
                     printf(", ");
             }
             printf(") Data: [");
-            for (size_t i = 0; i < m_Size; i++)
+            for (size_t I = 0; I < MSize; I++)
             {
-                printf("%.1f", host_data[i]);
-                if (i < m_Size - 1)
+                printf("%.1f", HostData[I]);
+                if (I < MSize - 1)
                     printf(", ");
             }
             printf("]\n");
         }
 
-        free(host_data);
+        free(HostData);
     }
 
-    template <typename... Args> tensor Reshape(Args... dims)
+    template <typename... Args> tensor Reshape(Args... Dims)
     {
         static_assert(sizeof...(Args) > 0, "Must provide at least one dimension");
 
-        int new_dims[] = {dims...};
-        int new_ndims = sizeof...(Args);
+        int NewDims[] = {Dims...};
+        int NewNdims = sizeof...(Args);
 
-        size_t new_size = 1;
-        for (int i = 0; i < new_ndims; i++)
+        size_t NewSize = 1;
+        for (int I = 0; I < NewNdims; I++)
         {
-            new_size *= new_dims[i];
+            NewSize *= NewDims[I];
         }
 
-        if (new_size != m_Size)
+        if (NewSize != MSize)
         {
-            printf("Error: Cannot reshape tensor of size %zu to size %zu\n", m_Size, new_size);
-            tensor empty;
-            return empty;
+            printf("Error: Cannot reshape tensor of size %zu to size %zu\n", MSize, NewSize);
+            tensor Empty;
+            return Empty;
         }
 
         tensor Result;
-        Result.m_Data = m_Data;
-        Result.m_NDims = new_ndims;
-        Result.m_Size = m_Size;
+        Result.MData = MData;
+        Result.MNDims = NewNdims;
+        Result.MSize = MSize;
 
-        for (int i = 0; i < new_ndims; i++)
+        for (int I = 0; I < NewNdims; I++)
         {
-            Result.m_Dims[i] = new_dims[i];
+            Result.MDims[I] = NewDims[I];
         }
 
-        m_Data = nullptr;
+        MData = nullptr;
 
         return Result;
     }
 
     tensor MatMul(const tensor &B) const
     {
-        if (m_NDims != 2 || B.m_NDims != 2)
+        if (MNDims != 2 || B.MNDims != 2)
         {
-            printf("Error: MatMul requires both tensors to be 2D. Got %dD and %dD\n", m_NDims, B.m_NDims);
-            tensor empty;
-            return empty;
+            printf("Error: MatMul requires both tensors to be 2D. Got %dD and %dD\n", MNDims, B.MNDims);
+            tensor Empty;
+            return Empty;
         }
 
-        int M = m_Dims[0];   // Rows of A
-        int K = m_Dims[1];   // Cols of A / Rows of B
-        int N = B.m_Dims[1]; // Cols of B
+        int M = MDims[0];   // Rows of A
+        int K = MDims[1];   // Cols of A / Rows of B
+        int N = B.MDims[1]; // Cols of B
 
-        if (m_Dims[1] != B.m_Dims[0])
+        if (MDims[1] != B.MDims[0])
         {
-            printf("Error: MatMul incompatible shapes: (%d, %d) × (%d, %d)\n", m_Dims[0], m_Dims[1], B.m_Dims[0],
-                   B.m_Dims[1]);
-            tensor empty;
-            return empty;
+            printf("Error: MatMul incompatible shapes: (%d, %d) × (%d, %d)\n", MDims[0], MDims[1], B.MDims[0],
+                   B.MDims[1]);
+            tensor Empty;
+            return Empty;
         }
 
-        tensor result;
-        result.m_NDims = 2;
-        result.m_Dims[0] = M;
-        result.m_Dims[1] = N;
-        result.m_Size = M * N;
+        tensor Result;
+        Result.MNDims = 2;
+        Result.MDims[0] = M;
+        Result.MDims[1] = N;
+        Result.MSize = M * N;
 
-        cudaMalloc(&result.m_Data, result.m_Size * sizeof(float));
+        cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
 
-        dim3 blockSize(16, 16);
-        dim3 gridSize((N + blockSize.x - 1) / blockSize.x, (M + blockSize.y - 1) / blockSize.y);
+        dim3 BlockSize(16, 16);
+        dim3 GridSize((N + BlockSize.x - 1) / BlockSize.x, (M + BlockSize.y - 1) / BlockSize.y);
 
-        MatMulKernel<<<gridSize, blockSize>>>(m_Data, B.m_Data, result.m_Data, M, N, K);
+        MatMulKernel<<<GridSize, BlockSize>>>(MData, B.MData, Result.MData, M, N, K);
 
-        return result;
+        return Result;
     }
 
-    tensor &operator+=(const tensor &other)
+    tensor &operator+=(const tensor &Other)
     {
-        if (!IsShapeCompatible(other))
+        if (!IsShapeCompatible(Other))
         {
             printf("Error: Incompatible tensor shapes for += operation\n");
             return *this;
         }
 
-        AddKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, other.m_Data, m_Data, m_Size);
+        AddKernel<<<Ceil(MSize, 256), 256>>>(MData, Other.MData, MData, MSize);
         return *this;
     }
 
-    tensor &operator-=(const tensor &other)
+    tensor &operator-=(const tensor &Other)
     {
-        if (!IsShapeCompatible(other))
+        if (!IsShapeCompatible(Other))
         {
             printf("Error: Incompatible tensor shapes for -= operation\n");
             return *this;
         }
 
-        SubtractKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, other.m_Data, m_Data, m_Size);
+        SubtractKernel<<<Ceil(MSize, 256), 256>>>(MData, Other.MData, MData, MSize);
         return *this;
     }
 
-    tensor &operator*=(const tensor &other)
+    tensor &operator*=(const tensor &Other)
     {
-        if (!IsShapeCompatible(other))
+        if (!IsShapeCompatible(Other))
         {
             printf("Error: Incompatible tensor shapes for *= operation\n");
             return *this;
         }
 
-        MultiplyKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, other.m_Data, m_Data, m_Size);
+        MultiplyKernel<<<Ceil(MSize, 256), 256>>>(MData, Other.MData, MData, MSize);
         return *this;
     }
 
-    tensor &operator/=(const tensor &other)
+    tensor &operator/=(const tensor &Other)
     {
-        if (!IsShapeCompatible(other))
+        if (!IsShapeCompatible(Other))
         {
             printf("Error: Incompatible tensor shapes for /= operation\n");
             return *this;
         }
 
-        DivideKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, other.m_Data, m_Data, m_Size);
+        DivideKernel<<<Ceil(MSize, 256), 256>>>(MData, Other.MData, MData, MSize);
         return *this;
     }
 
-    tensor &operator+=(float scalar)
+    tensor &operator+=(float Scalar)
     {
-        AddScalarKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, m_Data, scalar, m_Size);
+        AddScalarKernel<<<Ceil(MSize, 256), 256>>>(MData, MData, Scalar, MSize);
         return *this;
     }
 
-    tensor &operator-=(float scalar)
+    tensor &operator-=(float Scalar)
     {
-        SubtractScalarKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, m_Data, scalar, m_Size);
+        SubtractScalarKernel<<<Ceil(MSize, 256), 256>>>(MData, MData, Scalar, MSize);
         return *this;
     }
 
-    tensor &operator*=(float scalar)
+    tensor &operator*=(float Scalar)
     {
-        MultiplyScalarKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, m_Data, scalar, m_Size);
+        MultiplyScalarKernel<<<Ceil(MSize, 256), 256>>>(MData, MData, Scalar, MSize);
         return *this;
     }
 
-    tensor &operator/=(float scalar)
+    tensor &operator/=(float Scalar)
     {
-        DivideScalarKernel<<<Ceil(m_Size, 256), 256>>>(m_Data, m_Data, scalar, m_Size);
+        DivideScalarKernel<<<Ceil(MSize, 256), 256>>>(MData, MData, Scalar, MSize);
         return *this;
     }
 
-    tensor() : m_Data(nullptr), m_NDims(0), m_Size(0)
+    tensor() : MData(nullptr), MNDims(0), MSize(0)
     {
     }
 
-    bool IsShapeCompatible(const tensor &other) const
+    bool IsShapeCompatible(const tensor &Other) const
     {
-        if (m_NDims != other.m_NDims || m_Size != other.m_Size)
+        if (MNDims != Other.MNDims || MSize != Other.MSize)
             return false;
 
-        for (int i = 0; i < m_NDims; i++)
+        for (int I = 0; I < MNDims; I++)
         {
-            if (m_Dims[i] != other.m_Dims[i])
+            if (MDims[I] != Other.MDims[I])
                 return false;
         }
         return true;
@@ -414,20 +414,20 @@ tensor operator+(const tensor &A, const tensor &B)
     if (!A.IsShapeCompatible(B))
     {
         printf("Error: Incompatible tensor shapes for addition\n");
-        tensor empty;
-        return empty;
+        tensor Empty;
+        return Empty;
     }
 
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    AddKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    AddKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, B.MData, Result.MData, Result.MSize);
 
     return Result;
 }
@@ -437,20 +437,20 @@ tensor operator-(const tensor &A, const tensor &B)
     if (!A.IsShapeCompatible(B))
     {
         printf("Error: Incompatible tensor shapes for subtraction\n");
-        tensor empty;
-        return empty;
+        tensor Empty;
+        return Empty;
     }
 
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    SubtractKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    SubtractKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, B.MData, Result.MData, Result.MSize);
 
     return Result;
 }
@@ -460,20 +460,20 @@ tensor operator*(const tensor &A, const tensor &B)
     if (!A.IsShapeCompatible(B))
     {
         printf("Error: Incompatible tensor shapes for multiplication\n");
-        tensor empty;
-        return empty;
+        tensor Empty;
+        return Empty;
     }
 
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    MultiplyKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    MultiplyKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, B.MData, Result.MData, Result.MSize);
 
     return Result;
 }
@@ -483,110 +483,110 @@ tensor operator/(const tensor &A, const tensor &B)
     if (!A.IsShapeCompatible(B))
     {
         printf("Error: Incompatible tensor shapes for division\n");
-        tensor empty;
-        return empty;
+        tensor Empty;
+        return Empty;
     }
 
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    DivideKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, B.m_Data, Result.m_Data, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    DivideKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, B.MData, Result.MData, Result.MSize);
 
     return Result;
 }
 
-tensor operator+(const tensor &A, float scalar)
+tensor operator+(const tensor &A, float Scalar)
 {
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    AddScalarKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, Result.m_Data, scalar, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    AddScalarKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, Result.MData, Scalar, Result.MSize);
 
     return Result;
 }
 
-tensor operator+(float scalar, const tensor &A)
+tensor operator+(float Scalar, const tensor &A)
 {
-    return A + scalar;
+    return A + Scalar;
 }
 
-tensor operator-(const tensor &A, float scalar)
+tensor operator-(const tensor &A, float Scalar)
 {
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    SubtractScalarKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, Result.m_Data, scalar, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    SubtractScalarKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, Result.MData, Scalar, Result.MSize);
 
     return Result;
 }
 
-tensor operator-(float scalar, const tensor &A)
+tensor operator-(float Scalar, const tensor &A)
 {
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    AddScalarKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, Result.m_Data, -scalar, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    AddScalarKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, Result.MData, -Scalar, Result.MSize);
 
     return Result;
 }
 
-tensor operator*(const tensor &A, float scalar)
+tensor operator*(const tensor &A, float Scalar)
 {
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    MultiplyScalarKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, Result.m_Data, scalar, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    MultiplyScalarKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, Result.MData, Scalar, Result.MSize);
 
     return Result;
 }
 
-tensor operator*(float scalar, const tensor &A)
+tensor operator*(float Scalar, const tensor &A)
 {
-    return A * scalar;
+    return A * Scalar;
 }
 
-tensor operator/(const tensor &A, float scalar)
+tensor operator/(const tensor &A, float Scalar)
 {
     tensor Result;
-    Result.m_NDims = A.m_NDims;
-    Result.m_Size = A.m_Size;
-    for (int i = 0; i < A.m_NDims; i++)
+    Result.MNDims = A.MNDims;
+    Result.MSize = A.MSize;
+    for (int I = 0; I < A.MNDims; I++)
     {
-        Result.m_Dims[i] = A.m_Dims[i];
+        Result.MDims[I] = A.MDims[I];
     }
 
-    cudaMalloc(&Result.m_Data, Result.m_Size * sizeof(float));
-    DivideScalarKernel<<<Ceil(Result.m_Size, 256), 256>>>(A.m_Data, Result.m_Data, scalar, Result.m_Size);
+    cudaMalloc(&Result.MData, Result.MSize * sizeof(float));
+    DivideScalarKernel<<<Ceil(Result.MSize, 256), 256>>>(A.MData, Result.MData, Scalar, Result.MSize);
 
     return Result;
 }

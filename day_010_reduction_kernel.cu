@@ -41,7 +41,7 @@ typedef int32_t s32;
 #define BLOCK_SIZE 32
 #endif
 
-__global__ void ReduceVector(const f32 *Input, f32 *Output, int n)
+__global__ void ReduceVector(const f32 *Input, f32 *Output, int N)
 {
     __shared__ f32 SharedData[BLOCK_SIZE];
 
@@ -49,15 +49,15 @@ __global__ void ReduceVector(const f32 *Input, f32 *Output, int n)
     int Tx = threadIdx.x;
 
     // Load data into shared memory
-    SharedData[Tx] = (Tid < n) ? Input[Tid] : 0.0f;
+    SharedData[Tx] = (Tid < N) ? Input[Tid] : 0.0f;
     __syncthreads();
 
     // Tree reduction - improved version without divergence
-    for (int s = blockDim.x / 2; s > 0; s >>= 1)
+    for (int S = blockDim.x / 2; S > 0; S >>= 1)
     {
-        if (Tx < s)
+        if (Tx < S)
         {
-            SharedData[Tx] += SharedData[Tx + s];
+            SharedData[Tx] += SharedData[Tx + S];
         }
         __syncthreads();
     }

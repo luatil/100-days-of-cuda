@@ -55,15 +55,15 @@
 #include "day_019_make_random.h"
 #include <cfloat>
 
-#define Max(_a, _b) (_a > _b) ? _a : _b
-#define Min(_a, _b) (_a < _b) ? _a : _b
+#define MAX(_a, _b) (_a > _b) ? _a : _b
+#define MIN(_a, _b) (_a < _b) ? _a : _b
 
-static void CPU_SoftMax_01(const f32 *Input, f32 *Output, u32 N)
+static void CpuSoftMax01(const f32 *Input, f32 *Output, u32 N)
 {
     f32 MaxValue = -FLT_MAX;
     for (u32 I = 0; I < N; I++)
     {
-        MaxValue = Max(MaxValue, Input[I]);
+        MaxValue = MAX(MaxValue, Input[I]);
     }
     Dbg(MaxValue);
 
@@ -82,19 +82,19 @@ static void CPU_SoftMax_01(const f32 *Input, f32 *Output, u32 N)
 
 #define BLOCK_DIM 256
 #define COARSE_FACTOR 2
-__device__ float atomicMaxFloat(float *address, float val)
+__device__ float AtomicMaxFloat(float *Address, float Val)
 {
-    int *address_as_int = (int *)address;
-    int old = *address_as_int, assumed;
+    int *AddressAsInt = (int *)Address;
+    int Old = *AddressAsInt, Assumed;
     do
     {
-        assumed = old;
-        old = atomicCAS(address_as_int, assumed, __float_as_int(fmaxf(val, __int_as_float(assumed))));
-    } while (assumed != old);
-    return __int_as_float(old);
+        Assumed = Old;
+        Old = atomicCAS(AddressAsInt, Assumed, __float_as_int(fmaxf(Val, __int_as_float(Assumed))));
+    } while (Assumed != Old);
+    return __int_as_float(Old);
 }
 
-__global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u32 N)
+__global__ void SoftMaxKernel02GlobalMax(const f32 *Input, f32 *GlobalMax, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -107,7 +107,7 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     {
         if ((Tid + BLOCK_DIM * I) < N)
         {
-            Shared[Tx] = Max(Shared[Tx], Input[Tid + BLOCK_DIM * I]);
+            Shared[Tx] = MAX(Shared[Tx], Input[Tid + BLOCK_DIM * I]);
         }
     }
 
@@ -117,7 +117,7 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
         __syncthreads();
         if (Tx < Stride)
         {
-            Shared[Tx] = Max(Shared[Tx], Shared[Tx + Stride]);
+            Shared[Tx] = MAX(Shared[Tx], Shared[Tx + Stride]);
         }
     }
 
@@ -125,11 +125,11 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     if (Tx == 0)
     {
         printf("MAX: Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
-        atomicMaxFloat(GlobalMax, Shared[0]);
+        AtomicMaxFloat(GlobalMax, Shared[0]);
     }
 }
 
-__global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *GlobalMax, f32 *GlobalMaxSum, u32 N)
+__global__ void SoftMaxKernel02GlobalMaxSum(const f32 *Input, const f32 *GlobalMax, f32 *GlobalMaxSum, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -167,7 +167,7 @@ __global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *Glob
     }
 }
 
-__global__ void SoftMax_Kernel_02_Map(const f32 *Input, const f32 *GlobalMax, const f32 *GlobalMaxSum, f32 *Output,
+__global__ void SoftMaxKernel02Map(const f32 *Input, const f32 *GlobalMax, const f32 *GlobalMaxSum, f32 *Output,
                                       u32 N)
 {
     u32 Tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -178,26 +178,26 @@ __global__ void SoftMax_Kernel_02_Map(const f32 *Input, const f32 *GlobalMax, co
     }
 }
 
-static void GPU_SoftMax_02(const f32 *Device_Input, f32 *Device_Output, u32 N)
+static void GpuSoftMax02(const f32 *DeviceInput, f32 *DeviceOutput, u32 N)
 {
     u32 ThreadsPerBlock = BLOCK_DIM;
     u32 BlocksPerGrid = (N + (ThreadsPerBlock * COARSE_FACTOR) - 1) / (ThreadsPerBlock * COARSE_FACTOR);
 
-    f32 *Device_GlobalMax, *Device_GlobalMaxSum;
-    cudaMalloc(&Device_GlobalMax, sizeof(f32));
-    cudaMalloc(&Device_GlobalMaxSum, sizeof(f32));
+    f32 *DeviceGlobalMax, *DeviceGlobalMaxSum;
+    cudaMalloc(&DeviceGlobalMax, sizeof(f32));
+    cudaMalloc(&DeviceGlobalMaxSum, sizeof(f32));
 
-    SoftMax_Kernel_02_GlobalMax<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax, N);
+    SoftMaxKernel02GlobalMax<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax, N);
     // DbgCudaF32(Device_GlobalMax);
-    SoftMax_Kernel_02_GlobalMaxSum<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax,
-                                                                       Device_GlobalMaxSum, N);
+    SoftMaxKernel02GlobalMaxSum<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax,
+                                                                       DeviceGlobalMaxSum, N);
 
     // DbgCudaF32(Device_GlobalMaxSum);
     BlocksPerGrid = (N + (ThreadsPerBlock * 1) - 1) / (ThreadsPerBlock * 1);
-    SoftMax_Kernel_02_Map<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax, Device_GlobalMaxSum,
-                                                              Device_Output, N);
-    cudaFree(Device_GlobalMax);
-    cudaFree(Device_GlobalMax);
+    SoftMaxKernel02Map<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax, DeviceGlobalMaxSum,
+                                                              DeviceOutput, N);
+    cudaFree(DeviceGlobalMax);
+    cudaFree(DeviceGlobalMax);
 }
 #undef COARSE_FACTOR
 #undef BLOCK_DIM
@@ -214,14 +214,14 @@ int main()
     f32 Input[] = {1000, -1.0, -2.0f, -3.0f};
 #endif
     f32 *Output = AllocateCPU(f32, N);
-    f32 *Reference_Output = AllocateCPU(f32, N);
+    f32 *ReferenceOutput = AllocateCPU(f32, N);
 
-    CPU_SoftMax_01(Input, Reference_Output, N);
+    CpuSoftMax01(Input, ReferenceOutput, N);
 
     f32 ReferenceSum = 0.0f;
     for (u32 I = 0; I < N; I++)
     {
-        ReferenceSum += Reference_Output[I];
+        ReferenceSum += ReferenceOutput[I];
         // printf("%f\n", Input[I]);
         // printf("%f\n", Reference_Output[I]);
     }
@@ -229,16 +229,16 @@ int main()
     fprintf(stdout, "Total Softmax: %.3f\n", ReferenceSum);
 
 #if 1
-    f32 *Device_Input, *Device_Output;
-    cudaMalloc(&Device_Input, sizeof(f32) * N);
-    cudaMalloc(&Device_Output, sizeof(f32) * N);
+    f32 *DeviceInput, *DeviceOutput;
+    cudaMalloc(&DeviceInput, sizeof(f32) * N);
+    cudaMalloc(&DeviceOutput, sizeof(f32) * N);
 
-    cudaMemcpy(Device_Input, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceInput, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
 
     // NOTE(luatil): Also compare here with GPU_SoftMax_01
-    GPU_SoftMax_02(Device_Input, Device_Output, N);
+    GpuSoftMax02(DeviceInput, DeviceOutput, N);
 
-    cudaMemcpy(Output, Device_Output, sizeof(f32) * N, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Output, DeviceOutput, sizeof(f32) * N, cudaMemcpyDeviceToHost);
 
     f32 OutputSum = 0.0f;
     for (u32 I = 0; I < N; I++)
@@ -256,7 +256,7 @@ int main()
     fprintf(stdout, "\nLast 5 reference softmax values: ");
     for (u32 I = 0; I < 5 && I < N; I++)
     {
-        fprintf(stdout, "%.6f ", Reference_Output[(N - 1) - I]);
+        fprintf(stdout, "%.6f ", ReferenceOutput[(N - 1) - I]);
     }
     fprintf(stdout, "\n");
 
@@ -264,7 +264,7 @@ int main()
 
     // FreeCPU(Input);
     FreeCPU(Output);
-    cudaFree(Device_Input);
-    cudaFree(Device_Output);
+    cudaFree(DeviceInput);
+    cudaFree(DeviceOutput);
 #endif
 }

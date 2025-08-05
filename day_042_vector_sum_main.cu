@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
 
-#define Assert(_Expr) assert(_Expr)
-#define Eps 1e-8
+#define ASSERT(_Expr) assert(_Expr)
+#define EPS 1e-8
 
 __global__ void VectorSum(const float *A, const float *B, float *C, int N)
 {
@@ -29,7 +29,7 @@ __global__ void CheckResult(const float *A, const float *B, const float *C, int 
 
     if (Tid < N)
     {
-        Assert(C[Tid] - (A[Tid] + B[Tid]) < Eps);
+        ASSERT(C[Tid] - (A[Tid] + B[Tid]) < EPS);
     }
 }
 

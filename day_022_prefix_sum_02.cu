@@ -72,13 +72,13 @@ __global__ void ScanPartialSums(float *PartialSums, int N)
 
 __global__ void ExpandPartialSums(const float *PartialSums, float *Output, int N)
 {
-    const int IsFirstBlock = blockIdx.x == 0;
-    const int Tid = blockDim.x * blockIdx.x + threadIdx.x;
-    const int TidInRange = Tid < N;
+    const int IS_FIRST_BLOCK = blockIdx.x == 0;
+    const int TID = blockDim.x * blockIdx.x + threadIdx.x;
+    const int TID_IN_RANGE = TID < N;
 
     __shared__ float BlockPartialSum;
 
-    if (!IsFirstBlock)
+    if (!IS_FIRST_BLOCK)
     {
         if (threadIdx.x == 0)
         {
@@ -86,25 +86,25 @@ __global__ void ExpandPartialSums(const float *PartialSums, float *Output, int N
         }
         __syncthreads();
 
-        if (TidInRange)
+        if (TID_IN_RANGE)
         {
-            Output[Tid] += BlockPartialSum;
+            Output[TID] += BlockPartialSum;
         }
     }
 }
 
 // input, output are device pointers
-void solve(const float *input, float *output, int N)
+void Solve(const float *Input, float *Output, int N)
 {
-    const int NumberOfBlocks = (N + BLOCK_DIM - 1) / BLOCK_DIM;
+    const int NUMBER_OF_BLOCKS = (N + BLOCK_DIM - 1) / BLOCK_DIM;
 
     float *PartialSums;
-    cudaMalloc(&PartialSums, NumberOfBlocks * sizeof(float));
+    cudaMalloc(&PartialSums, NUMBER_OF_BLOCKS * sizeof(float));
 
-    CalculatePartialSums<<<NumberOfBlocks, BLOCK_DIM>>>(input, output, PartialSums, N);
-    ScanPartialSums<<<1, 1>>>(PartialSums, NumberOfBlocks);
+    CalculatePartialSums<<<NUMBER_OF_BLOCKS, BLOCK_DIM>>>(Input, Output, PartialSums, N);
+    ScanPartialSums<<<1, 1>>>(PartialSums, NUMBER_OF_BLOCKS);
     // Could optimize by removing first block.
-    ExpandPartialSums<<<NumberOfBlocks, BLOCK_DIM>>>(PartialSums, output, N);
+    ExpandPartialSums<<<NUMBER_OF_BLOCKS, BLOCK_DIM>>>(PartialSums, Output, N);
 
     cudaFree(PartialSums);
 }

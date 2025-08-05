@@ -154,29 +154,29 @@ template <int BLOCK_DIM, int COARSE_FACTOR> __global__ void CoarsenedMultiBlock(
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
-    const int Tid = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
-    const int Tx = threadIdx.x;
+    const int TID = COARSE_FACTOR * blockDim.x * blockIdx.x + threadIdx.x;
+    const int TX = threadIdx.x;
 
-    Shared[Tx] = 0.0f;
+    Shared[TX] = 0.0f;
     for (int I = 0; I < COARSE_FACTOR; I++)
     {
-        if (Tid + blockDim.x * I < N)
+        if (TID + blockDim.x * I < N)
         {
-            Shared[Tx] += Input[Tid + blockDim.x * I];
+            Shared[TX] += Input[TID + blockDim.x * I];
         }
     }
     __syncthreads();
 
     for (int Stride = blockDim.x / 2; Stride > 0; Stride /= 2)
     {
-        if (Tx < Stride)
+        if (TX < Stride)
         {
-            Shared[Tx] += Shared[Tx + Stride];
+            Shared[TX] += Shared[TX + Stride];
         }
         __syncthreads();
     }
 
-    if (Tx == 0)
+    if (TX == 0)
     {
         atomicAdd(Output, Shared[0]);
     }
@@ -189,15 +189,15 @@ template <int BLOCK_DIM, int COARSE_FACTOR> __global__ void CoarsenedMultiBlock(
 void ReductionBenchmark(nvbench::state &State)
 {
     const auto N = State.get_int64("Elements");
-    const auto Algorithm = State.get_string("Algorithm");
-    const auto BlockSize = State.get_int64("BlockSize");
+    const auto ALGORITHM = State.get_string("Algorithm");
+    const auto BLOCK_SIZE = State.get_int64("BlockSize");
 
     // Allocate memory
-    const size_t Bytes = N * sizeof(f32);
+    const size_t BYTES = N * sizeof(f32);
     f32 *DeviceInput, *DeviceOutput, *DeviceTemp;
-    cudaMalloc(&DeviceInput, Bytes);
+    cudaMalloc(&DeviceInput, BYTES);
     cudaMalloc(&DeviceOutput, sizeof(f32));
-    cudaMalloc(&DeviceTemp, Bytes); // For algorithms that modify input
+    cudaMalloc(&DeviceTemp, BYTES); // For algorithms that modify input
 
     // Initialize data with 1.0f for easy verification
     std::vector<f32> HostInput(N, 1.0f);
@@ -209,62 +209,62 @@ void ReductionBenchmark(nvbench::state &State)
     State.add_global_memory_writes<f32>(1, "OutputWrites");
 
     // Calculate grid dimensions
-    const int BlocksPerGrid = (N + BlockSize - 1) / BlockSize;
-    const int BlocksPerGridCoarsened = (N + BlockSize * 4 - 1) / (BlockSize * 4);
+    const int BLOCKS_PER_GRID = (N + BlockSize - 1) / BlockSize;
+    const int BLOCKS_PER_GRID_COARSENED = (N + BlockSize * 4 - 1) / (BLOCK_SIZE * 4);
 
     State.exec([&](nvbench::launch &Launch) {
         // Reset output for atomic variants
         cudaMemset(DeviceOutput, 0, sizeof(f32));
 
         // Copy input to temp for algorithms that modify input
-        cudaMemcpy(DeviceTemp, DeviceInput, Bytes, cudaMemcpyDeviceToDevice);
+        cudaMemcpy(DeviceTemp, DeviceInput, BYTES, cudaMemcpyDeviceToDevice);
 
-        if (Algorithm == "TreeReduction")
+        if (ALGORITHM == "TreeReduction")
         {
-            if (BlockSize == 128)
+            if (BLOCK_SIZE == 128)
             {
-                TreeReduction<128><<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                TreeReduction<128><<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 256)
+            else if (BLOCK_SIZE == 256)
             {
-                TreeReduction<256><<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                TreeReduction<256><<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 512)
+            else if (BLOCK_SIZE == 512)
             {
-                TreeReduction<512><<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                TreeReduction<512><<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 1024)
+            else if (BLOCK_SIZE == 1024)
             {
-                TreeReduction<1024><<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                TreeReduction<1024><<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
 
             // TreeReduction outputs per-block results, need final reduction
-            if (BlocksPerGrid > 1)
+            if (BLOCKS_PER_GRID > 1)
             {
-                int FinalThreads = (int)min(BlocksPerGrid, (int)BlockSize);
-                if (BlockSize == 128)
+                int FinalThreads = (int)min(BLOCKS_PER_GRID, (int)BlockSize);
+                if (BLOCK_SIZE == 128)
                 {
                     TreeReduction<128>
-                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BlocksPerGrid);
+                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BLOCKS_PER_GRID);
                 }
-                else if (BlockSize == 256)
+                else if (BLOCK_SIZE == 256)
                 {
                     TreeReduction<256>
-                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BlocksPerGrid);
+                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BLOCKS_PER_GRID);
                 }
-                else if (BlockSize == 512)
+                else if (BLOCK_SIZE == 512)
                 {
                     TreeReduction<512>
-                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BlocksPerGrid);
+                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BLOCKS_PER_GRID);
                 }
-                else if (BlockSize == 1024)
+                else if (BLOCK_SIZE == 1024)
                 {
                     TreeReduction<1024>
-                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BlocksPerGrid);
+                        <<<1, FinalThreads, 0, Launch.get_stream()>>>(DeviceOutput, DeviceOutput, BLOCKS_PER_GRID);
                 }
             }
         }
-        else if (Algorithm == "NaiveSingleBlock")
+        else if (ALGORITHM == "NaiveSingleBlock")
         {
             // Single block only - limit to reasonable size
             if (N <= 2048)
@@ -273,7 +273,7 @@ void ReductionBenchmark(nvbench::state &State)
                 NaiveSingleBlock<<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
             }
         }
-        else if (Algorithm == "ImprovedSingleBlock")
+        else if (ALGORITHM == "ImprovedSingleBlock")
         {
             // Single block only - limit to reasonable size
             if (N <= 2048)
@@ -282,78 +282,78 @@ void ReductionBenchmark(nvbench::state &State)
                 ImprovedSingleBlock<<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
             }
         }
-        else if (Algorithm == "SharedMemorySingleBlock")
+        else if (ALGORITHM == "SharedMemorySingleBlock")
         {
             // Single block only - limit to reasonable size
             if (N <= 2048)
             {
                 int ThreadsToUse = (int)min((int)(N / 2), (int)BlockSize);
-                if (BlockSize == 128)
+                if (BLOCK_SIZE == 128)
                 {
                     SharedMemorySingleBlock<128>
                         <<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
                 }
-                else if (BlockSize == 256)
+                else if (BLOCK_SIZE == 256)
                 {
                     SharedMemorySingleBlock<256>
                         <<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
                 }
-                else if (BlockSize == 512)
+                else if (BLOCK_SIZE == 512)
                 {
                     SharedMemorySingleBlock<512>
                         <<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
                 }
-                else if (BlockSize == 1024)
+                else if (BLOCK_SIZE == 1024)
                 {
                     SharedMemorySingleBlock<1024>
                         <<<1, ThreadsToUse, 0, Launch.get_stream()>>>(DeviceTemp, DeviceOutput, N);
                 }
             }
         }
-        else if (Algorithm == "MultiBlockAtomic")
+        else if (ALGORITHM == "MultiBlockAtomic")
         {
-            if (BlockSize == 128)
+            if (BLOCK_SIZE == 128)
             {
                 MultiBlockAtomic<128>
-                    <<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 256)
+            else if (BLOCK_SIZE == 256)
             {
                 MultiBlockAtomic<256>
-                    <<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 512)
+            else if (BLOCK_SIZE == 512)
             {
                 MultiBlockAtomic<512>
-                    <<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 1024)
+            else if (BLOCK_SIZE == 1024)
             {
                 MultiBlockAtomic<1024>
-                    <<<BlocksPerGrid, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
         }
-        else if (Algorithm == "CoarsenedMultiBlock")
+        else if (ALGORITHM == "CoarsenedMultiBlock")
         {
-            if (BlockSize == 128)
+            if (BLOCK_SIZE == 128)
             {
                 CoarsenedMultiBlock<128, 4>
-                    <<<BlocksPerGridCoarsened, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID_COARSENED, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 256)
+            else if (BLOCK_SIZE == 256)
             {
                 CoarsenedMultiBlock<256, 4>
-                    <<<BlocksPerGridCoarsened, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID_COARSENED, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 512)
+            else if (BLOCK_SIZE == 512)
             {
                 CoarsenedMultiBlock<512, 4>
-                    <<<BlocksPerGridCoarsened, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID_COARSENED, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
-            else if (BlockSize == 1024)
+            else if (BLOCK_SIZE == 1024)
             {
                 CoarsenedMultiBlock<1024, 4>
-                    <<<BlocksPerGridCoarsened, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
+                    <<<BLOCKS_PER_GRID_COARSENED, BlockSize, 0, Launch.get_stream()>>>(DeviceInput, DeviceOutput, N);
             }
         }
     });

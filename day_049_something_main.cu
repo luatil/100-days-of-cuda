@@ -32,19 +32,19 @@ __global__ void VectorSumKernel(float *A, float *B, float *C, int N)
 int main()
 {
     int N = 1024 * 1024;
-    float *d_A, *d_B, *d_C;
-    cudaMalloc(&d_A, sizeof(float) * N);
-    cudaMalloc(&d_B, sizeof(float) * N);
-    cudaMalloc(&d_C, sizeof(float) * N);
+    float *DA, *DB, *DC;
+    cudaMalloc(&DA, sizeof(float) * N);
+    cudaMalloc(&DB, sizeof(float) * N);
+    cudaMalloc(&DC, sizeof(float) * N);
 
     int BlockDim = 256;
     int GridDim = (N + BlockDim - 1) / BlockDim;
 
-    FillValue<float><<<GridDim, BlockDim>>>(d_A, 1.0f, N);
-    FillValue<float><<<GridDim, BlockDim>>>(d_B, 2.0f, N);
+    FillValue<float><<<GridDim, BlockDim>>>(DA, 1.0f, N);
+    FillValue<float><<<GridDim, BlockDim>>>(DB, 2.0f, N);
 
-    VectorSumKernel<<<GridDim, BlockDim>>>(d_A, d_B, d_C, N);
+    VectorSumKernel<<<GridDim, BlockDim>>>(DA, DB, DC, N);
 
-    PrintArray<10><<<1, 1>>>(d_C, N);
+    PrintArray<10><<<1, 1>>>(DC, N);
     cudaDeviceSynchronize();
 }

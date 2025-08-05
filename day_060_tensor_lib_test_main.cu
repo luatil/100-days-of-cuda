@@ -34,8 +34,8 @@ int main()
 
     // Example 5: Create new tensor and reshape to 3x2
     printf("5. Creating new tensor and reshaping to 3x2\n");
-    tensor T5_base(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
-    tensor T5 = T5_base.Reshape(3, 2);
+    tensor T5Base(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
+    tensor T5 = T5Base.Reshape(3, 2);
     printf("Result: ");
     T5.Print();
     printf("\n");
@@ -169,10 +169,10 @@ int main()
     // Test 13: 2D tensor operations
     printf("13. 2D Tensor operations: [[1.0, 2.0], [3.0, 4.0]] + [[0.5, 1.5], [2.5, 3.5]]\n");
     tensor A13(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor A13_2D = A13.Reshape(2, 2);
+    tensor A132D = A13.Reshape(2, 2);
     tensor B13(0.5f, 1.5f, 2.5f, 3.5f);
-    tensor B13_2D = B13.Reshape(2, 2);
-    tensor C13 = A13_2D + B13_2D;
+    tensor B132D = B13.Reshape(2, 2);
+    tensor C13 = A132D + B132D;
     printf("Result: ");
     C13.Print();
     printf("\n");
@@ -184,25 +184,25 @@ int main()
     // Test 1: Basic 2x2 matrix multiplication
     printf("1. Basic 2x2 MatMul: [[1.0, 2.0], [3.0, 4.0]] @ [[2.0, 0.0], [1.0, 2.0]]\n");
     tensor M1(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor M1_2D = M1.Reshape(2, 2);
+    tensor M12D = M1.Reshape(2, 2);
     tensor M2(2.0f, 0.0f, 1.0f, 2.0f);
-    tensor M2_2D = M2.Reshape(2, 2);
-    tensor M_result1 = M1_2D.MatMul(M2_2D);
+    tensor M22D = M2.Reshape(2, 2);
+    tensor MResult1 = M12D.MatMul(M22D);
     printf("Result: ");
-    M_result1.Print();
+    MResult1.Print();
     printf("Expected: [[4.0, 4.0], [10.0, 8.0]]\n\n");
 
     // Test 2: Rectangular matrix multiplication (2x3) × (3x2)
     printf("2. Rectangular MatMul: (2x3) × (3x2)\n");
     printf("A = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]\n");
     printf("B = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]]\n");
-    tensor A_rect(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
-    tensor A_2x3 = A_rect.Reshape(2, 3);
-    tensor B_rect(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
-    tensor B_3x2 = B_rect.Reshape(3, 2);
-    tensor M_result2 = A_2x3.MatMul(B_3x2);
+    tensor ARect(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
+    tensor A2x3 = ARect.Reshape(2, 3);
+    tensor BRect(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
+    tensor B3x2 = BRect.Reshape(3, 2);
+    tensor MResult2 = A2x3.MatMul(B3x2);
     printf("Result: ");
-    M_result2.Print();
+    MResult2.Print();
     printf("Expected: [[22.0, 28.0], [49.0, 64.0]]\n\n");
 
     // Test 3: Vector multiplication (dot product) (1x4) × (4x1)
@@ -210,12 +210,12 @@ int main()
     printf("A = [[1.0, 2.0, 3.0, 4.0]]\n");
     printf("B = [[2.0], [3.0], [4.0], [5.0]]\n");
     tensor V1(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor V1_1x4 = V1.Reshape(1, 4);
+    tensor V11x4 = V1.Reshape(1, 4);
     tensor V2(2.0f, 3.0f, 4.0f, 5.0f);
-    tensor V2_4x1 = V2.Reshape(4, 1);
-    tensor M_result3 = V1_1x4.MatMul(V2_4x1);
+    tensor V24x1 = V2.Reshape(4, 1);
+    tensor MResult3 = V11x4.MatMul(V24x1);
     printf("Result: ");
-    M_result3.Print();
+    MResult3.Print();
     printf("Expected: [[40.0]] (1*2 + 2*3 + 3*4 + 4*5 = 40)\n\n");
 
     // Test 4: Outer product (4x1) × (1x3)
@@ -223,34 +223,34 @@ int main()
     printf("A = [[1.0], [2.0], [3.0], [4.0]]\n");
     printf("B = [[2.0, 3.0, 4.0]]\n");
     tensor O1(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor O1_4x1 = O1.Reshape(4, 1);
+    tensor O14x1 = O1.Reshape(4, 1);
     tensor O2(2.0f, 3.0f, 4.0f);
-    tensor O2_1x3 = O2.Reshape(1, 3);
-    tensor M_result4 = O1_4x1.MatMul(O2_1x3);
+    tensor O21x3 = O2.Reshape(1, 3);
+    tensor MResult4 = O14x1.MatMul(O21x3);
     printf("Result: ");
-    M_result4.Print();
+    MResult4.Print();
     printf("Expected: [[2.0, 3.0, 4.0], [4.0, 6.0, 8.0], [6.0, 9.0, 12.0], [8.0, 12.0, 16.0]]\n\n");
 
     // Test 5: Identity matrix multiplication
     printf("5. Identity matrix test: [[1.0, 2.0], [3.0, 4.0]] @ [[1.0, 0.0], [0.0, 1.0]]\n");
     tensor I1(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor I1_2x2 = I1.Reshape(2, 2);
+    tensor I12x2 = I1.Reshape(2, 2);
     tensor I2(1.0f, 0.0f, 0.0f, 1.0f); // Identity matrix
-    tensor I2_2x2 = I2.Reshape(2, 2);
-    tensor M_result5 = I1_2x2.MatMul(I2_2x2);
+    tensor I22x2 = I2.Reshape(2, 2);
+    tensor MResult5 = I12x2.MatMul(I22x2);
     printf("Result: ");
-    M_result5.Print();
+    MResult5.Print();
     printf("Expected: [[1.0, 2.0], [3.0, 4.0]] (unchanged)\n\n");
 
     // Test 6: Error case - incompatible dimensions
     printf("6. Error test - incompatible dimensions: (2x3) × (2x2)\n");
     tensor E1(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
-    tensor E1_2x3 = E1.Reshape(2, 3);
+    tensor E12x3 = E1.Reshape(2, 3);
     tensor E2(1.0f, 2.0f, 3.0f, 4.0f);
-    tensor E2_2x2 = E2.Reshape(2, 2);
-    tensor M_error = E1_2x3.MatMul(E2_2x2);
+    tensor E22x2 = E2.Reshape(2, 2);
+    tensor MError = E12x3.MatMul(E22x2);
     printf("Result: ");
-    M_error.Print();
+    MError.Print();
     printf("Expected: Error message and empty tensor []\n\n");
 
     printf("=== All MatMul tests completed! ===\n");

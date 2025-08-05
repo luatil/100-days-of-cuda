@@ -4,15 +4,15 @@
 typedef float f32;
 typedef unsigned int u32;
 
-__global__ void AddVector_Float4(const f32 *A, const f32 *B, f32 *C, u32 N)
+__global__ void AddVectorFloat4(const f32 *A, const f32 *B, f32 *C, u32 N)
 {
     int Tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (Tid * 4 < N)
     {
-        float4 a = reinterpret_cast<const float4 *>(A)[Tid];
-        float4 b = reinterpret_cast<const float4 *>(B)[Tid];
-        float4 c = make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
-        reinterpret_cast<float4 *>(C)[Tid] = c;
+        float4 A = reinterpret_cast<const float4 *>(A)[Tid];
+        float4 B = reinterpret_cast<const float4 *>(B)[Tid];
+        float4 C = make_float4(A.x + B.x, A.y + B.y, A.z + B.z, A.w + B.w);
+        reinterpret_cast<float4 *>(C)[Tid] = C;
     }
 }

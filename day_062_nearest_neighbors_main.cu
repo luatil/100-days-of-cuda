@@ -1,5 +1,5 @@
-#include <cuda_runtime.h>
 #include <cfloat>
+#include <cuda_runtime.h>
 #include <stdio.h>
 // #define LEET_GPU
 
@@ -38,11 +38,11 @@ __global__ void NearestNeighbors(const float *Points, int *Indices, int N)
     }
 }
 
-extern "C" void solve(const float* points, int* indices, int N)
+extern "C" void Solve(const float *Points, int *Indices, int N)
 {
-    const int BlockDim = 256;
-    const int GridDim = (N + BlockDim - 1) / BlockDim;
-    NearestNeighbors<<<GridDim, BlockDim>>>(points, indices, N);
+    const int BLOCK_DIM = 256;
+    const int GRID_DIM = (N + BLOCK_DIM - 1) / BLOCK_DIM;
+    NearestNeighbors<<<GRID_DIM, BLOCK_DIM>>>(Points, Indices, N);
 }
 
 #ifndef LEET_GPU
@@ -55,21 +55,21 @@ int main()
     int Indices[] = {-1, -1, -1};
     int N = 3;
 
-    float *d_Points;
-    int  *d_Indices;
-    cudaMalloc(&d_Points, N * 3 * sizeof(float));
-    cudaMalloc(&d_Indices, N * sizeof(int));
+    float *DPoints;
+    int *DIndices;
+    cudaMalloc(&DPoints, N * 3 * sizeof(float));
+    cudaMalloc(&DIndices, N * sizeof(int));
 
-    cudaMemcpy(d_Points, Points, N * 3 * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_Indices, Indices, N * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(DPoints, Points, N * 3 * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DIndices, Indices, N * sizeof(int), cudaMemcpyHostToDevice);
 
-    solve(d_Points, d_Indices, N);
+    Solve(DPoints, DIndices, N);
 
-    cudaMemcpy(Indices, d_Indices, N * sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(Indices, DIndices, N * sizeof(int), cudaMemcpyDeviceToHost);
 
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        printf("%d => %d\n", i, Indices[i]);
+        printf("%d => %d\n", I, Indices[I]);
     }
 }
 #endif

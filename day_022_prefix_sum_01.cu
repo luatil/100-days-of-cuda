@@ -13,7 +13,7 @@ __global__ void PrefixSum(const float *Input, float *Output, int N)
 }
 
 // input, output are device pointers
-void solve(const float *input, float *output, int N)
+void Solve(const float *Input, float *Output, int N)
 {
-    PrefixSum<<<1, 1>>>(input, output, N);
+    PrefixSum<<<1, 1>>>(Input, Output, N);
 }

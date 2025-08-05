@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
 {
     options Opts = ParseCommandLine(argc, argv);
 
-    u8 *d_Image;
+    u8 *DImage;
 
-    cudaMalloc(&d_Image, sizeof(u8) * Opts.Width * Opts.Height);
+    cudaMalloc(&DImage, sizeof(u8) * Opts.Width * Opts.Height);
 
     dim3 BlockDim(16, 16);
     dim3 GridDim((Opts.Width + 16 - 1) / 16, (Opts.Height + 16 - 1) / 16);
@@ -108,20 +108,20 @@ int main(int argc, char *argv[])
         vec2<f32> P0{0.5, 0.3};
         vec2<f32> P1{0.5, 0.5};
 
-        DrawLine<<<GridDim, BlockDim>>>(d_Image, P0, P1, Opts.Width, Opts.Height);
+        DrawLine<<<GridDim, BlockDim>>>(DImage, P0, P1, Opts.Width, Opts.Height);
     }
     {
         vec2<f32> P0{0.3, 0.3};
         vec2<f32> P1{0.5, 0.6};
 
-        DrawLine<<<GridDim, BlockDim>>>(d_Image, P0, P1, Opts.Width, Opts.Height);
+        DrawLine<<<GridDim, BlockDim>>>(DImage, P0, P1, Opts.Width, Opts.Height);
     }
 
     u8 *Image = (u8 *)malloc(sizeof(u8) * Opts.Width * Opts.Height);
-    cudaMemcpy(Image, d_Image, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Image, DImage, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
 
     stbi_write_jpg(Opts.OutputFilename, Opts.Width, Opts.Height, 1, Image, 100);
 
     free(Image);
-    cudaFree(d_Image);
+    cudaFree(DImage);
 }

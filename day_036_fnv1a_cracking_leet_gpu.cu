@@ -4,111 +4,111 @@
 
 // Simple string equality function
 // Returns 1 if strings are equal, 0 if different
-__device__ int streq(const char *s1, const char *s2)
+__device__ int Streq(const char *S1, const char *S2)
 {
     // Handle null pointers
-    if (s1 == NULL || s2 == NULL)
+    if (S1 == NULL || S2 == NULL)
     {
-        return s1 == s2; // Both null = equal, one null = not equal
+        return S1 == S2; // Both null = equal, one null = not equal
     }
 
     // Compare character by character
-    while (*s1 && *s2)
+    while (*S1 && *S2)
     {
-        if (*s1 != *s2)
+        if (*S1 != *S2)
         {
             return 0; // Different characters found
         }
-        s1++;
-        s2++;
+        S1++;
+        S2++;
     }
 
     // Check if both strings ended at the same time
-    return *s1 == *s2;
+    return *S1 == *S2;
 }
 
-__device__ void data_from_tid(int tid, int length, char result[8])
+__device__ void DataFromTid(int Tid, int Length, char Result[8])
 {
-    int temp_tid = tid;
-    for (int i = length - 1; i >= 0; i--)
+    int TempTid = Tid;
+    for (int I = Length - 1; I >= 0; I--)
     {
-        result[i] = 'a' + (temp_tid % 26);
-        temp_tid /= 26;
+        Result[I] = 'a' + (TempTid % 26);
+        TempTid /= 26;
     }
-    result[length] = 0;
+    Result[Length] = 0;
 }
 
 // FNV-1a hash function that takes a byte array and its length as input
 // Returns a 32-bit unsigned integer hash value
-__device__ unsigned int fnv1a_hash_bytes(char data[8], int length, int R)
+__device__ unsigned int Fnv1aHashBytes(char Data[8], int Length, int R)
 {
     const unsigned int FNV_PRIME = 16777619;
     const unsigned int OFFSET_BASIS = 2166136261;
 
-    unsigned int hash = OFFSET_BASIS;
+    unsigned int Hash = OFFSET_BASIS;
 
     // First round: hash the input data
-    for (int i = 0; i < length; i++)
+    for (int I = 0; I < Length; I++)
     {
-        hash = (hash ^ data[i]) * FNV_PRIME;
+        Hash = (Hash ^ Data[I]) * FNV_PRIME;
     }
 
     // Additional rounds: hash the previous hash result
-    for (int round = 1; round < R; round++)
+    for (int Round = 1; Round < R; Round++)
     {
-        unsigned int temp_hash = hash;
-        hash = OFFSET_BASIS;
+        unsigned int TempHash = Hash;
+        Hash = OFFSET_BASIS;
 
         // Hash the 4 bytes of the previous hash (little-endian)
-        for (int i = 0; i < 4; i++)
+        for (int I = 0; I < 4; I++)
         {
-            unsigned char byte = (temp_hash >> (i * 8)) & 0xFF;
-            hash = (hash ^ byte) * FNV_PRIME;
+            unsigned char Byte = (TempHash >> (I * 8)) & 0xFF;
+            Hash = (Hash ^ Byte) * FNV_PRIME;
         }
     }
 
-    return hash;
+    return Hash;
 }
 
-__device__ void copy(char *dest, char data[8], int length)
+__device__ void Copy(char *Dest, char Data[8], int Length)
 {
-    for (int i = 0; i < length; i++)
+    for (int I = 0; I < Length; I++)
     {
-        dest[i] = data[i];
+        Dest[I] = Data[I];
     }
-    dest[length] = 0;
+    Dest[Length] = 0;
 }
 
-__global__ void crack_password_kernel(unsigned int target_hash, int password_length, int R, char *output_password)
+__global__ void CrackPasswordKernel(unsigned int TargetHash, int PasswordLength, int R, char *OutputPassword)
 {
-    const int tid = blockDim.x * blockIdx.x + threadIdx.x;
-    char data[8];
-    data_from_tid(tid, password_length, data);
-    unsigned int hash = fnv1a_hash_bytes(data, password_length, R);
+    const int TID = blockDim.x * blockIdx.x + threadIdx.x;
+    char Data[8];
+    DataFromTid(TID, PasswordLength, Data);
+    unsigned int Hash = Fnv1aHashBytes(Data, PasswordLength, R);
 
-    if (hash == target_hash)
+    if (Hash == TargetHash)
     {
-        copy(output_password, data, password_length);
+        Copy(OutputPassword, Data, PasswordLength);
     }
 }
 
-__host__ long long power(int x, int n)
+__host__ long long Power(int X, int N)
 {
-    if (n <= 0)
+    if (N <= 0)
     {
         return 1;
     }
     else
     {
-        return x * power(x, n - 1);
+        return X * Power(X, N - 1);
     }
 }
 
 // output_password is a device pointer
-void solve(unsigned int target_hash, int password_length, int R, char *output_password)
+void Solve(unsigned int TargetHash, int PasswordLength, int R, char *OutputPassword)
 {
-    int total_values = power(26, password_length);
-    int block_dim = 1024;
-    int grid_dim = (total_values + block_dim - 1) / block_dim;
-    crack_password_kernel<<<grid_dim, block_dim>>>(target_hash, password_length, R, output_password);
+    int TotalValues = Power(26, PasswordLength);
+    int BlockDim = 1024;
+    int GridDim = (TotalValues + BlockDim - 1) / BlockDim;
+    CrackPasswordKernel<<<GridDim, BlockDim>>>(TargetHash, PasswordLength, R, OutputPassword);
 }

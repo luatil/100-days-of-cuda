@@ -41,20 +41,20 @@ int main()
         Input[I] = 1.0f;
     }
 
-    f32 *Device_Input, *Device_Output;
-    cudaMalloc(&Device_Input, sizeof(f32) * N);
-    cudaMalloc(&Device_Output, sizeof(f32) * 1);
-    cudaMemset(Device_Output, 0, sizeof(f32));
+    f32 *DeviceInput, *DeviceOutput;
+    cudaMalloc(&DeviceInput, sizeof(f32) * N);
+    cudaMalloc(&DeviceOutput, sizeof(f32) * 1);
+    cudaMemset(DeviceOutput, 0, sizeof(f32));
 
-    cudaMemcpy(Device_Input, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceInput, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
 
     u32 ThreadsPerBlock = BLOCK_DIM;
     u32 BlocksPerGrid = (N + (BLOCK_DIM * COARSE_FACTOR) - 1) / (BLOCK_DIM * COARSE_FACTOR);
 
-    ReductionKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_Output, N);
+    ReductionKernel<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceOutput, N);
 
     f32 Output;
-    cudaMemcpy(&Output, Device_Output, sizeof(f32), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&Output, DeviceOutput, sizeof(f32), cudaMemcpyDeviceToHost);
 
     fprintf(stdout, "Expected: %f\n", N * 1.0f);
     fprintf(stdout, "Output: %f\n", Output);

@@ -5,7 +5,7 @@
 #define BLOCK_DIM 256
 
 #define COARSE_FACTOR 2 // Min Is 2
-__global__ void ReductionKernel_CoarseFactor2(f32 *Input, f32 *Output, u32 N)
+__global__ void ReductionKernelCoarseFactor2(f32 *Input, f32 *Output, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -35,7 +35,7 @@ __global__ void ReductionKernel_CoarseFactor2(f32 *Input, f32 *Output, u32 N)
 #undef COARSE_FACTOR
 
 #define COARSE_FACTOR 4 // Min Is 2
-__global__ void ReductionKernel_CoarseFactor4(f32 *Input, f32 *Output, u32 N)
+__global__ void ReductionKernelCoarseFactor4(f32 *Input, f32 *Output, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -65,7 +65,7 @@ __global__ void ReductionKernel_CoarseFactor4(f32 *Input, f32 *Output, u32 N)
 #undef COARSE_FACTOR
 
 #define COARSE_FACTOR 8 // Min Is 2
-__global__ void ReductionKernel_CoarseFactor8(f32 *Input, f32 *Output, u32 N)
+__global__ void ReductionKernelCoarseFactor8(f32 *Input, f32 *Output, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -95,7 +95,7 @@ __global__ void ReductionKernel_CoarseFactor8(f32 *Input, f32 *Output, u32 N)
 #undef COARSE_FACTOR
 
 #define COARSE_FACTOR 16 // Min Is 2
-__global__ void ReductionKernel_CoarseFactor16(f32 *Input, f32 *Output, u32 N)
+__global__ void ReductionKernelCoarseFactor16(f32 *Input, f32 *Output, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -146,12 +146,12 @@ int main(int argc, char **argv)
         Input[I] = 1.0f;
     }
 
-    f32 *Device_Input, *Device_Output;
-    cudaMalloc(&Device_Input, sizeof(f32) * N);
-    cudaMalloc(&Device_Output, sizeof(f32) * 1);
-    cudaMemset(Device_Output, 0, sizeof(f32));
+    f32 *DeviceInput, *DeviceOutput;
+    cudaMalloc(&DeviceInput, sizeof(f32) * N);
+    cudaMalloc(&DeviceOutput, sizeof(f32) * 1);
+    cudaMemset(DeviceOutput, 0, sizeof(f32));
 
-    cudaMemcpy(Device_Input, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceInput, Input, sizeof(f32) * N, cudaMemcpyHostToDevice);
 
     u32 ThreadsPerBlock = BLOCK_DIM;
     u32 SizeInBytes = sizeof(f32) * N;
@@ -164,9 +164,9 @@ int main(int argc, char **argv)
 
         while (IsTesting(&Tester))
         {
-            cudaMemset(Device_Output, 0, sizeof(f32));
+            cudaMemset(DeviceOutput, 0, sizeof(f32));
             BeginTime(&Tester);
-            ReductionKernel_CoarseFactor2<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_Output, N);
+            ReductionKernelCoarseFactor2<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceOutput, N);
             EndTime(&Tester);
         }
         PrintResults(&Tester, "Reduction Coarse Factor 2");
@@ -180,9 +180,9 @@ int main(int argc, char **argv)
 
         while (IsTesting(&Tester))
         {
-            cudaMemset(Device_Output, 0, sizeof(f32));
+            cudaMemset(DeviceOutput, 0, sizeof(f32));
             BeginTime(&Tester);
-            ReductionKernel_CoarseFactor4<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_Output, N);
+            ReductionKernelCoarseFactor4<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceOutput, N);
             EndTime(&Tester);
         }
         PrintResults(&Tester, "Reduction Coarse Factor 4");
@@ -196,9 +196,9 @@ int main(int argc, char **argv)
 
         while (IsTesting(&Tester))
         {
-            cudaMemset(Device_Output, 0, sizeof(f32));
+            cudaMemset(DeviceOutput, 0, sizeof(f32));
             BeginTime(&Tester);
-            ReductionKernel_CoarseFactor8<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_Output, N);
+            ReductionKernelCoarseFactor8<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceOutput, N);
             EndTime(&Tester);
         }
         PrintResults(&Tester, "Reduction Coarse Factor 8");
@@ -212,16 +212,16 @@ int main(int argc, char **argv)
 
         while (IsTesting(&Tester))
         {
-            cudaMemset(Device_Output, 0, sizeof(f32));
+            cudaMemset(DeviceOutput, 0, sizeof(f32));
             BeginTime(&Tester);
-            ReductionKernel_CoarseFactor16<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_Output, N);
+            ReductionKernelCoarseFactor16<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceOutput, N);
             EndTime(&Tester);
         }
         PrintResults(&Tester, "Reduction Coarse Factor 16");
     }
 
     f32 Output;
-    cudaMemcpy(&Output, Device_Output, sizeof(f32), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&Output, DeviceOutput, sizeof(f32), cudaMemcpyDeviceToHost);
 
     fprintf(stdout, "%f\n", Output);
     Assert((N - Output) < 0.1);

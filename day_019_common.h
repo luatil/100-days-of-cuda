@@ -9,11 +9,11 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef float f32;
 
-#define AllocateCPU(_Type, _NumberOfElements) (_Type *)malloc(sizeof(_Type) * _NumberOfElements)
-#define FreeCPU(_Ptr) free(_Ptr)
+#define ALLOCATE_CPU(_Type, _NumberOfElements) (_Type *)malloc(sizeof(_Type) * _NumberOfElements)
+#define FREE_CPU(_Ptr) free(_Ptr)
 
 #ifndef Assert
-#define Assert(_Expr) assert(_Expr)
+#define ASSERT(_Expr) assert(_Expr)
 #endif
 
 #ifndef DEBUG_ENABLED
@@ -21,10 +21,10 @@ typedef float f32;
 #endif
 
 #if DEBUG_ENABLED
-#define DbgU32(_Val) printf(#_Val "=%d\n", (_Val))
-#define DbgU64(_Val) printf(#_Val "=%ld\n", (_Val))
-#define DbgF32(_Val) printf(#_Val "=%f\n", (_Val))
-#define DbgS32(_Val) printf(#_Val "=%d\n", (_Val))
+#define DBG_U32(_Val) printf(#_Val "=%d\n", (_Val))
+#define DBG_U64(_Val) printf(#_Val "=%ld\n", (_Val))
+#define DBG_F32(_Val) printf(#_Val "=%f\n", (_Val))
+#define DBG_S32(_Val) printf(#_Val "=%d\n", (_Val))
 #else
 #define DbgU32(_Val)
 #define DbgU64(_Val)
@@ -33,13 +33,13 @@ typedef float f32;
 #endif
 
 #if DEBUG_ENABLED
-#define Dbg(_Val) printf(#_Val "=%.4f\n", (double)(_Val))
+#define DBG(_Val) printf(#_Val "=%.4f\n", (double)(_Val))
 #else
 #define Dbg(_Val)
 #endif
 
 #if DEBUG_ENABLED
-#define DbgCudaF32(_Val)                                                                                               \
+#define DBG_CUDA_F32(_Val)                                                                                               \
     do                                                                                                                 \
     {                                                                                                                  \
         f32 *temp_host = AllocateCPU(f32, 1);                                                                          \

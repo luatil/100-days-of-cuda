@@ -8,158 +8,158 @@
 #define NUM_ITERATIONS 1000
 
 // Simple vector addition kernel
-__global__ void vectorAdd(const float *a, const float *b, float *c, int n)
+__global__ void VectorAdd(const float *A, const float *B, float *C, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        c[idx] = a[idx] + b[idx];
+        C[Idx] = A[Idx] + B[Idx];
     }
 }
 
 // Vector scaling kernel
-__global__ void vectorScale(float *a, float scale, int n)
+__global__ void VectorScale(float *A, float Scale, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        a[idx] *= scale;
+        A[Idx] *= Scale;
     }
 }
 
 // Vector square kernel
-__global__ void vectorSquare(float *a, int n)
+__global__ void VectorSquare(float *A, int N)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
+    int Idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Idx < N)
     {
-        a[idx] = a[idx] * a[idx];
+        A[Idx] = A[Idx] * A[Idx];
     }
 }
 
 // CUDA timing utility
-struct CUDATimer
+struct cuda_timer
 {
-    cudaEvent_t start, stop;
+    cudaEvent_t Start, Stop;
 
-    CUDATimer()
+    cuda_timer()
     {
-        cudaEventCreate(&start);
-        cudaEventCreate(&stop);
+        cudaEventCreate(&Start);
+        cudaEventCreate(&Stop);
     }
 
-    ~CUDATimer()
+    ~cuda_timer()
     {
-        cudaEventDestroy(start);
-        cudaEventDestroy(stop);
+        cudaEventDestroy(Start);
+        cudaEventDestroy(Stop);
     }
 
-    void startTimer()
+    void StartTimer()
     {
-        cudaEventRecord(start);
+        cudaEventRecord(Start);
     }
 
-    float stopTimer()
+    float StopTimer()
     {
-        cudaEventRecord(stop);
-        cudaEventSynchronize(stop);
-        float milliseconds = 0;
-        cudaEventElapsedTime(&milliseconds, start, stop);
-        return milliseconds;
+        cudaEventRecord(Stop);
+        cudaEventSynchronize(Stop);
+        float Milliseconds = 0;
+        cudaEventElapsedTime(&Milliseconds, Start, Stop);
+        return Milliseconds;
     }
 };
 
 // Traditional kernel launches
-float runTraditionalLaunches(float *d_a, float *d_b, float *d_c, float *d_temp, int n)
+float RunTraditionalLaunches(float *DA, float *DB, float *DC, float *DTemp, int N)
 {
-    int gridSize = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    CUDATimer timer;
+    int GridSize = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    cuda_timer Timer;
 
-    timer.startTimer();
+    Timer.StartTimer();
 
-    for (int i = 0; i < NUM_ITERATIONS; i++)
+    for (int I = 0; I < NUM_ITERATIONS; I++)
     {
         // Sequence of operations: add -> scale -> square
-        vectorAdd<<<gridSize, BLOCK_SIZE>>>(d_a, d_b, d_temp, n);
-        vectorScale<<<gridSize, BLOCK_SIZE>>>(d_temp, 2.0f, n);
-        vectorSquare<<<gridSize, BLOCK_SIZE>>>(d_temp, n);
+        VectorAdd<<<GridSize, BLOCK_SIZE>>>(DA, DB, DTemp, N);
+        VectorScale<<<GridSize, BLOCK_SIZE>>>(DTemp, 2.0f, N);
+        VectorSquare<<<GridSize, BLOCK_SIZE>>>(DTemp, N);
 
         // Copy result back to d_c
-        cudaMemcpy(d_c, d_temp, n * sizeof(float), cudaMemcpyDeviceToDevice);
+        cudaMemcpy(DC, DTemp, N * sizeof(float), cudaMemcpyDeviceToDevice);
     }
 
     cudaDeviceSynchronize();
-    return timer.stopTimer();
+    return Timer.StopTimer();
 }
 
 // CUDA Graphs execution
-float runCudaGraphs(float *d_a, float *d_b, float *d_c, float *d_temp, int n)
+float RunCudaGraphs(float *DA, float *DB, float *DC, float *DTemp, int N)
 {
-    int gridSize = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    cudaGraph_t graph;
-    cudaGraphExec_t graphExec;
-    cudaStream_t stream;
+    int GridSize = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    cudaGraph_t Graph;
+    cudaGraphExec_t GraphExec;
+    cudaStream_t Stream;
 
     // Create stream for graph capture
-    cudaStreamCreate(&stream);
+    cudaStreamCreate(&Stream);
 
     // Start graph capture
-    cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+    cudaStreamBeginCapture(Stream, cudaStreamCaptureModeGlobal);
 
     // Record the sequence of operations
-    vectorAdd<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_a, d_b, d_temp, n);
-    vectorScale<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_temp, 2.0f, n);
-    vectorSquare<<<gridSize, BLOCK_SIZE, 0, stream>>>(d_temp, n);
-    cudaMemcpyAsync(d_c, d_temp, n * sizeof(float), cudaMemcpyDeviceToDevice, stream);
+    VectorAdd<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DA, DB, DTemp, N);
+    VectorScale<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DTemp, 2.0f, N);
+    VectorSquare<<<GridSize, BLOCK_SIZE, 0, Stream>>>(DTemp, N);
+    cudaMemcpyAsync(DC, DTemp, N * sizeof(float), cudaMemcpyDeviceToDevice, Stream);
 
     // End capture and create graph
-    cudaStreamEndCapture(stream, &graph);
+    cudaStreamEndCapture(Stream, &Graph);
 
     // Instantiate the graph
-    cudaGraphInstantiate(&graphExec, graph, NULL, NULL, 0);
+    cudaGraphInstantiate(&GraphExec, Graph, NULL, NULL, 0);
 
     // Time the graph execution
-    CUDATimer timer;
-    timer.startTimer();
+    cuda_timer Timer;
+    Timer.StartTimer();
 
-    for (int i = 0; i < NUM_ITERATIONS; i++)
+    for (int I = 0; I < NUM_ITERATIONS; I++)
     {
-        cudaGraphLaunch(graphExec, stream);
+        cudaGraphLaunch(GraphExec, Stream);
     }
 
-    cudaStreamSynchronize(stream);
-    float elapsed = timer.stopTimer();
+    cudaStreamSynchronize(Stream);
+    float Elapsed = Timer.StopTimer();
 
     // Cleanup
-    cudaGraphExecDestroy(graphExec);
-    cudaGraphDestroy(graph);
-    cudaStreamDestroy(stream);
+    cudaGraphExecDestroy(GraphExec);
+    cudaGraphDestroy(Graph);
+    cudaStreamDestroy(Stream);
 
-    return elapsed;
+    return Elapsed;
 }
 
 // Verify results are correct
-bool verifyResults(float *h_a, float *h_b, float *h_result, int n)
+bool VerifyResults(float *HA, float *HB, float *HResult, int N)
 {
-    bool correct = true;
-    const float epsilon = 1e-5f;
+    bool Correct = true;
+    const float EPSILON = 1e-5f;
 
-    for (int i = 0; i < n; i++)
+    for (int I = 0; I < N; I++)
     {
         // Expected: ((a + b) * 2.0)^2
-        float expected = (h_a[i] + h_b[i]) * 2.0f;
-        expected = expected * expected;
+        float Expected = (HA[I] + HB[I]) * 2.0f;
+        Expected = Expected * Expected;
 
-        if (abs(h_result[i] - expected) > epsilon)
+        if (abs(HResult[I] - Expected) > EPSILON)
         {
-            printf("Mismatch at index %d: got %f, expected %f\n", i, h_result[i], expected);
-            correct = false;
-            if (i > 10)
+            printf("Mismatch at index %d: got %f, expected %f\n", I, HResult[I], Expected);
+            Correct = false;
+            if (I > 10)
                 break; // Don't spam too many errors
         }
     }
 
-    return correct;
+    return Correct;
 }
 
 int main()
@@ -170,84 +170,84 @@ int main()
     printf("============================================\n");
 
     // Allocate host memory
-    float *h_a = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_b = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_result_traditional = (float *)malloc(VECTOR_SIZE * sizeof(float));
-    float *h_result_graph = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HA = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HB = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HResultTraditional = (float *)malloc(VECTOR_SIZE * sizeof(float));
+    float *HResultGraph = (float *)malloc(VECTOR_SIZE * sizeof(float));
 
     // Initialize input data
-    for (int i = 0; i < VECTOR_SIZE; i++)
+    for (int I = 0; I < VECTOR_SIZE; I++)
     {
-        h_a[i] = (float)i / 1000.0f;
-        h_b[i] = (float)(i + 1) / 1000.0f;
+        HA[I] = (float)I / 1000.0f;
+        HB[I] = (float)(I + 1) / 1000.0f;
     }
 
     // Allocate device memory
-    float *d_a, *d_b, *d_c, *d_temp;
-    cudaMalloc(&d_a, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_b, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_c, VECTOR_SIZE * sizeof(float));
-    cudaMalloc(&d_temp, VECTOR_SIZE * sizeof(float));
+    float *DA, *DB, *DC, *DTemp;
+    cudaMalloc(&DA, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DB, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DC, VECTOR_SIZE * sizeof(float));
+    cudaMalloc(&DTemp, VECTOR_SIZE * sizeof(float));
 
     // Copy input data to device
-    cudaMemcpy(d_a, h_a, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_b, h_b, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DA, HA, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(DB, HB, VECTOR_SIZE * sizeof(float), cudaMemcpyHostToDevice);
 
     // Run traditional kernel launches
     printf("Running traditional kernel launches...\n");
-    float time_traditional = runTraditionalLaunches(d_a, d_b, d_c, d_temp, VECTOR_SIZE);
-    cudaMemcpy(h_result_traditional, d_c, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
+    float TimeTraditional = RunTraditionalLaunches(DA, DB, DC, DTemp, VECTOR_SIZE);
+    cudaMemcpy(HResultTraditional, DC, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
     // Run CUDA Graphs
     printf("Running CUDA Graphs...\n");
-    float time_graph = runCudaGraphs(d_a, d_b, d_c, d_temp, VECTOR_SIZE);
-    cudaMemcpy(h_result_graph, d_c, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
+    float TimeGraph = RunCudaGraphs(DA, DB, DC, DTemp, VECTOR_SIZE);
+    cudaMemcpy(HResultGraph, DC, VECTOR_SIZE * sizeof(float), cudaMemcpyDeviceToHost);
 
     // Print results
     printf("\nPerformance Results:\n");
-    printf("Traditional launches: %8.2f ms\n", time_traditional);
-    printf("CUDA Graphs:         %8.2f ms\n", time_graph);
-    printf("Speedup:             %8.2fx\n", time_traditional / time_graph);
-    printf("Overhead reduction:  %8.2f%%\n", 100.0f * (time_traditional - time_graph) / time_traditional);
+    printf("Traditional launches: %8.2f ms\n", TimeTraditional);
+    printf("CUDA Graphs:         %8.2f ms\n", TimeGraph);
+    printf("Speedup:             %8.2fx\n", TimeTraditional / TimeGraph);
+    printf("Overhead reduction:  %8.2f%%\n", 100.0f * (TimeTraditional - TimeGraph) / TimeTraditional);
 
     // Verify correctness
     printf("\nVerification:\n");
-    bool traditional_correct = verifyResults(h_a, h_b, h_result_traditional, VECTOR_SIZE);
-    bool graph_correct = verifyResults(h_a, h_b, h_result_graph, VECTOR_SIZE);
+    bool TraditionalCorrect = VerifyResults(HA, HB, HResultTraditional, VECTOR_SIZE);
+    bool GraphCorrect = VerifyResults(HA, HB, HResultGraph, VECTOR_SIZE);
 
-    printf("Traditional results: %s\n", traditional_correct ? "CORRECT" : "INCORRECT");
-    printf("Graph results:       %s\n", graph_correct ? "CORRECT" : "INCORRECT");
+    printf("Traditional results: %s\n", TraditionalCorrect ? "CORRECT" : "INCORRECT");
+    printf("Graph results:       %s\n", GraphCorrect ? "CORRECT" : "INCORRECT");
 
     // Check if both methods produce the same results
-    bool results_match = true;
-    for (int i = 0; i < VECTOR_SIZE; i++)
+    bool ResultsMatch = true;
+    for (int I = 0; I < VECTOR_SIZE; I++)
     {
-        if (abs(h_result_traditional[i] - h_result_graph[i]) > 1e-5f)
+        if (abs(HResultTraditional[I] - HResultGraph[I]) > 1e-5f)
         {
-            results_match = false;
+            ResultsMatch = false;
             break;
         }
     }
-    printf("Results match:       %s\n", results_match ? "YES" : "NO");
+    printf("Results match:       %s\n", ResultsMatch ? "YES" : "NO");
 
     // Show example values
     printf("\nSample Results (first 5 elements):\n");
     printf("Index | Input A | Input B | Traditional | Graph\n");
     printf("------|---------|---------|-------------|-------\n");
-    for (int i = 0; i < 5; i++)
+    for (int I = 0; I < 5; I++)
     {
-        printf("%5d | %7.3f | %7.3f | %11.3f | %7.3f\n", i, h_a[i], h_b[i], h_result_traditional[i], h_result_graph[i]);
+        printf("%5d | %7.3f | %7.3f | %11.3f | %7.3f\n", I, HA[I], HB[I], HResultTraditional[I], HResultGraph[I]);
     }
 
     // Cleanup
-    free(h_a);
-    free(h_b);
-    free(h_result_traditional);
-    free(h_result_graph);
-    cudaFree(d_a);
-    cudaFree(d_b);
-    cudaFree(d_c);
-    cudaFree(d_temp);
+    free(HA);
+    free(HB);
+    free(HResultTraditional);
+    free(HResultGraph);
+    cudaFree(DA);
+    cudaFree(DB);
+    cudaFree(DC);
+    cudaFree(DTemp);
 
     return 0;
 }

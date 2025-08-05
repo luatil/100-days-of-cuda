@@ -1,32 +1,32 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-__global__ void Convolution2D(float *input, float *kernel, float *result, int inputWidth, int inputHeight,
-                              int kernelWidth, int kernelHeight)
+__global__ void Convolution2D(float *Input, float *Kernel, float *Result, int InputWidth, int InputHeight,
+                              int KernelWidth, int KernelHeight)
 {
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + threadIdx.x;
+    int Row = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (row < inputHeight && col < inputWidth)
+    if (Row < InputHeight && Col < InputWidth)
     {
-        float sum = 0.0f;
+        float Sum = 0.0f;
 
-        for (int m = -kernelHeight / 2; m <= kernelHeight / 2; m++)
+        for (int M = -KernelHeight / 2; M <= KernelHeight / 2; M++)
         {
-            for (int n = -kernelWidth / 2; n <= kernelWidth / 2; n++)
+            for (int N = -KernelWidth / 2; N <= KernelWidth / 2; N++)
             {
-                int inputRow = row + m;
-                int inputCol = col + n;
+                int InputRow = Row + M;
+                int InputCol = Col + N;
 
-                if (inputRow >= 0 && inputRow < inputHeight && inputCol >= 0 && inputCol < inputWidth)
+                if (InputRow >= 0 && InputRow < InputHeight && InputCol >= 0 && InputCol < InputWidth)
                 {
-                    sum += input[inputRow * inputWidth + inputCol] *
-                           kernel[(m + kernelHeight / 2) * kernelWidth + (n + kernelWidth / 2)];
+                    Sum += Input[InputRow * InputWidth + InputCol] *
+                           Kernel[(M + KernelHeight / 2) * KernelWidth + (N + KernelWidth / 2)];
                 }
             }
         }
 
-        result[row * inputWidth + col] = sum;
+        Result[Row * InputWidth + Col] = Sum;
     }
 }
 
@@ -39,15 +39,15 @@ int main()
 
     float Kernel[] = {0.0625, 0.125, 0.0625, 0.125, 0.25, 0.125, 0.0625, 0.125, 0.0625};
 
-    int inputSize = sizeof(Input);
-    int kernelSize = sizeof(Kernel);
-    int resultSize = sizeof(Result);
+    int InputSize = sizeof(Input);
+    int KernelSize = sizeof(Kernel);
+    int ResultSize = sizeof(Result);
 
-    float *d_input, *d_kernel, *d_result;
+    float *DInput, *DKernel, *DResult;
 
-    cudaMalloc(&d_input, inputSize);
-    cudaMalloc(&d_kernel, kernelSize);
-    cudaMalloc(&d_result, resultSize);
+    cudaMalloc(&DInput, InputSize);
+    cudaMalloc(&DKernel, KernelSize);
+    cudaMalloc(&DResult, ResultSize);
 
     for (int I = 0; I < 5; I++)
     {
@@ -72,16 +72,16 @@ int main()
     int InputWidth = 5;
     int InputHeight = 5;
 
-    cudaMemcpy(d_input, Input, inputSize, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_kernel, Kernel, kernelSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(DInput, Input, InputSize, cudaMemcpyHostToDevice);
+    cudaMemcpy(DKernel, Kernel, KernelSize, cudaMemcpyHostToDevice);
 
-    dim3 blockSize(16, 16);
-    dim3 gridSize((InputWidth + blockSize.x - 1) / blockSize.x, (InputHeight + blockSize.y - 1) / blockSize.y);
+    dim3 BlockSize(16, 16);
+    dim3 GridSize((InputWidth + BlockSize.x - 1) / BlockSize.x, (InputHeight + BlockSize.y - 1) / BlockSize.y);
 
-    Convolution2D<<<gridSize, blockSize>>>(d_input, d_kernel, d_result, InputWidth, InputHeight, KernelWidth,
+    Convolution2D<<<GridSize, BlockSize>>>(DInput, DKernel, DResult, InputWidth, InputHeight, KernelWidth,
                                            KernelHeight);
 
-    cudaMemcpy(Result, d_result, resultSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Result, DResult, ResultSize, cudaMemcpyDeviceToHost);
 
     puts("Result");
     for (int I = 0; I < 5; I++)
@@ -93,9 +93,9 @@ int main()
         puts("");
     }
 
-    cudaFree(d_input);
-    cudaFree(d_kernel);
-    cudaFree(d_result);
+    cudaFree(DInput);
+    cudaFree(DKernel);
+    cudaFree(DResult);
 
     return 0;
 }

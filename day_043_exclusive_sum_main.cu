@@ -35,13 +35,13 @@ template <int BLOCK_DIM>
 __global__ void ExclusiveSumKernel(int *XS, int *BlockCounter, int *Flags, int *ScanValue, int N)
 {
     // Dynamically select BlockId based on scheduling order
-    __shared__ unsigned int Bid_s;
+    __shared__ unsigned int BidS;
     if (threadIdx.x == 0)
     {
-        Bid_s = atomicAdd(BlockCounter, 1);
+        BidS = atomicAdd(BlockCounter, 1);
     }
     __syncthreads();
-    unsigned int Bid = Bid_s;
+    unsigned int Bid = BidS;
 
     __shared__ int Shared[BLOCK_DIM];
 

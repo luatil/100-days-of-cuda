@@ -3,13 +3,13 @@
 
 #define BLOCK_DIM 128
 
-__global__ void MonteCarloIntegrationKernel(const float *y_samples, float *result, float a, float b, int n_samples)
+__global__ void MonteCarloIntegrationKernel(const float *YSamples, float *Result, float A, float B, int NSamples)
 {
     int Tid = blockDim.x * blockIdx.x + threadIdx.x;
     int Tx = threadIdx.x;
 
     __shared__ float Shared[BLOCK_DIM];
-    Shared[Tx] = (Tid < n_samples) ? y_samples[Tid] : 0.0f;
+    Shared[Tx] = (Tid < NSamples) ? YSamples[Tid] : 0.0f;
     __syncthreads();
 
     for (int Stride = blockDim.x / 2; Stride > 0; Stride >>= 1)
@@ -29,14 +29,14 @@ __global__ void MonteCarloIntegrationKernel(const float *y_samples, float *resul
 
     if (Tx == 0)
     {
-        atomicAdd(result, (b - a) * (Shared[0] / n_samples));
+        atomicAdd(Result, (B - A) * (Shared[0] / NSamples));
     }
 }
 
 // y_samples, result are device pointers
-void solve(const float *y_samples, float *result, float a, float b, int n_samples)
+void Solve(const float *YSamples, float *Result, float A, float B, int NSamples)
 {
     int BlockDim = BLOCK_DIM;
-    int GridDim = (n_samples + BlockDim - 1) / BlockDim;
-    MonteCarloIntegrationKernel<<<GridDim, BlockDim>>>(y_samples, result, a, b, n_samples);
+    int GridDim = (NSamples + BlockDim - 1) / BlockDim;
+    MonteCarloIntegrationKernel<<<GridDim, BlockDim>>>(YSamples, Result, A, B, NSamples);
 }

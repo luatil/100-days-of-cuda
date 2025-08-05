@@ -5,18 +5,17 @@
 #endif
 
 // Runs with <<<1,1>>>
-__global__ void Histogram(const int *input, int *histogram, int N, int num_bins)
+__global__ void Histogram(const int *Input, int *Histogram, int N, int NumBins)
 {
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        int bin = input[i];
-        histogram[bin]++;
+        int Bin = Input[I];
+        Histogram[Bin]++;
     }
 }
 
-
 // input, histogram are device pointers
-void solve(const int* input, int* histogram, int N, int num_bins)
+void Solve(const int *Input, int *Histogram, int N, int NumBins)
 {
-    Histogram<<<1,1>>>(input, histogram, N, num_bins);
+    Histogram<<<1, 1>>>(Input, Histogram, N, NumBins);
 }

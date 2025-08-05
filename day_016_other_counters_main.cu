@@ -48,301 +48,301 @@
 // Metric data structure
 typedef struct
 {
-    CUdevice device;
-    CUpti_MetricID metricId;
-    CUpti_EventID *eventIdArray;
-    uint32_t numEvents;
-    uint64_t *eventValueArray;
-    CUpti_EventGroupSets *eventGroupSets;
-    int eventGroupSetCount;
-    int currentEventGroupSet;
-    int numEventGroups;
-    CUpti_EventGroup *eventGroups;
-} MetricData_t;
+    CUdevice Device;
+    CUpti_MetricID MetricId;
+    CUpti_EventID *EventIdArray;
+    uint32_t NumEvents;
+    uint64_t *EventValueArray;
+    CUpti_EventGroupSets *EventGroupSets;
+    int EventGroupSetCount;
+    int CurrentEventGroupSet;
+    int NumEventGroups;
+    CUpti_EventGroup *EventGroups;
+} metric_data_t;
 
-static int eventGroupSetIndex = 0;
-static MetricData_t metricData;
-static CUpti_SubscriberHandle subscriber;
+static int EventGroupSetIndex = 0;
+static metric_data_t MetricData;
+static CUpti_SubscriberHandle Subscriber;
 
 // Simple vector addition kernel
 __global__ void VecAdd(const int *A, const int *B, int *C, int NumberOfElements)
 {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
-    if (i < NumberOfElements)
-        C[i] = A[i] + B[i];
+    int I = blockDim.x * blockIdx.x + threadIdx.x;
+    if (I < NumberOfElements)
+        C[I] = A[I] + B[I];
 }
 
 // CUPTI callback function for metric collection
-static void CUPTIAPI getMetricValueCallback(void *userdata, CUpti_CallbackDomain, CUpti_CallbackId cbid,
-                                            const CUpti_CallbackData *cbInfo)
+static void CUPTIAPI GetMetricValueCallback(void *Userdata, CUpti_CallbackDomain, CUpti_CallbackId Cbid,
+                                            const CUpti_CallbackData *CbInfo)
 {
-    MetricData_t *metricData = (MetricData_t *)userdata;
+    metric_data_t *MetricData = (metric_data_t *)Userdata;
 
     // Check if this is a kernel launch callback
-    if ((cbid == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) ||
-        (cbid == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000))
+    if ((Cbid == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) ||
+        (Cbid == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000))
     {
 
-        if (cbInfo->callbackSite == CUPTI_API_ENTER)
+        if (CbInfo->callbackSite == CUPTI_API_ENTER)
         {
             // Enable event collection for the current event group set
-            if (eventGroupSetIndex < metricData->eventGroupSetCount)
+            if (EventGroupSetIndex < MetricData->EventGroupSetCount)
             {
-                printf("Enabling event group set %d\n", eventGroupSetIndex);
+                printf("Enabling event group set %d\n", EventGroupSetIndex);
 
-                CUpti_EventGroupSet eventGroupSet = metricData->eventGroupSets->sets[eventGroupSetIndex];
+                CUpti_EventGroupSet EventGroupSet = MetricData->EventGroupSets->sets[EventGroupSetIndex];
 
-                for (uint32_t i = 0; i < eventGroupSet.numEventGroups; i++)
+                for (uint32_t I = 0; I < EventGroupSet.numEventGroups; I++)
                 {
-                    CUPTI_CALL(cuptiEventGroupEnable(eventGroupSet.eventGroups[i]));
+                    CUPTI_CALL(cuptiEventGroupEnable(EventGroupSet.eventGroups[I]));
                 }
             }
         }
-        else if (cbInfo->callbackSite == CUPTI_API_EXIT)
+        else if (CbInfo->callbackSite == CUPTI_API_EXIT)
         {
             // Disable event collection and read event values
-            if (eventGroupSetIndex < metricData->eventGroupSetCount)
+            if (EventGroupSetIndex < MetricData->EventGroupSetCount)
             {
-                printf("Disabling event group set %d\n", eventGroupSetIndex);
+                printf("Disabling event group set %d\n", EventGroupSetIndex);
 
-                CUpti_EventGroupSet eventGroupSet = metricData->eventGroupSets->sets[eventGroupSetIndex];
+                CUpti_EventGroupSet EventGroupSet = MetricData->EventGroupSets->sets[EventGroupSetIndex];
 
-                for (uint32_t i = 0; i < eventGroupSet.numEventGroups; i++)
+                for (uint32_t I = 0; I < EventGroupSet.numEventGroups; I++)
                 {
-                    CUpti_EventGroup eventGroup = eventGroupSet.eventGroups[i];
-                    CUpti_EventDomainID eventDomainId;
-                    uint32_t numEvents, numInstances, numTotalInstances;
-                    size_t size;
+                    CUpti_EventGroup EventGroup = EventGroupSet.eventGroups[I];
+                    CUpti_EventDomainID EventDomainId;
+                    uint32_t NumEvents, NumInstances, NumTotalInstances;
+                    size_t Size;
 
                     // Get event group info
-                    size = sizeof(eventDomainId);
-                    CUPTI_CALL(cuptiEventGroupGetAttribute(eventGroup, CUPTI_EVENT_GROUP_ATTR_EVENT_DOMAIN_ID, &size,
-                                                           &eventDomainId));
-                    size = sizeof(numEvents);
+                    Size = sizeof(EventDomainId);
+                    CUPTI_CALL(cuptiEventGroupGetAttribute(EventGroup, CUPTI_EVENT_GROUP_ATTR_EVENT_DOMAIN_ID, &Size,
+                                                           &EventDomainId));
+                    Size = sizeof(NumEvents);
                     CUPTI_CALL(
-                        cuptiEventGroupGetAttribute(eventGroup, CUPTI_EVENT_GROUP_ATTR_NUM_EVENTS, &size, &numEvents));
-                    size = sizeof(numInstances);
-                    CUPTI_CALL(cuptiEventGroupGetAttribute(eventGroup, CUPTI_EVENT_GROUP_ATTR_INSTANCE_COUNT, &size,
-                                                           &numInstances));
+                        cuptiEventGroupGetAttribute(EventGroup, CUPTI_EVENT_GROUP_ATTR_NUM_EVENTS, &Size, &NumEvents));
+                    Size = sizeof(NumInstances);
+                    CUPTI_CALL(cuptiEventGroupGetAttribute(EventGroup, CUPTI_EVENT_GROUP_ATTR_INSTANCE_COUNT, &Size,
+                                                           &NumInstances));
 
                     // Get total instances for normalization
-                    CUPTI_CALL(cuptiDeviceGetEventDomainAttribute(metricData->device, eventDomainId,
-                                                                  CUPTI_EVENT_DOMAIN_ATTR_TOTAL_INSTANCE_COUNT, &size,
-                                                                  &numTotalInstances));
+                    CUPTI_CALL(cuptiDeviceGetEventDomainAttribute(MetricData->Device, EventDomainId,
+                                                                  CUPTI_EVENT_DOMAIN_ATTR_TOTAL_INSTANCE_COUNT, &Size,
+                                                                  &NumTotalInstances));
 
                     // Read event values
-                    uint64_t *eventValues = (uint64_t *)malloc(numEvents * numInstances * sizeof(uint64_t));
-                    size = numEvents * numInstances * sizeof(uint64_t);
-                    CUPTI_CALL(cuptiEventGroupReadAllEvents(eventGroup, CUPTI_EVENT_READ_FLAG_NONE, &size, eventValues,
-                                                            &size, NULL, NULL));
+                    uint64_t *EventValues = (uint64_t *)malloc(NumEvents * NumInstances * sizeof(uint64_t));
+                    Size = NumEvents * NumInstances * sizeof(uint64_t);
+                    CUPTI_CALL(cuptiEventGroupReadAllEvents(EventGroup, CUPTI_EVENT_READ_FLAG_NONE, &Size, EventValues,
+                                                            &Size, NULL, NULL));
 
                     // Get event IDs for this group
-                    CUpti_EventID *eventIds = (CUpti_EventID *)malloc(numEvents * sizeof(CUpti_EventID));
-                    size = numEvents * sizeof(CUpti_EventID);
-                    CUPTI_CALL(cuptiEventGroupGetAttribute(eventGroup, CUPTI_EVENT_GROUP_ATTR_EVENTS, &size, eventIds));
+                    CUpti_EventID *EventIds = (CUpti_EventID *)malloc(NumEvents * sizeof(CUpti_EventID));
+                    Size = NumEvents * sizeof(CUpti_EventID);
+                    CUPTI_CALL(cuptiEventGroupGetAttribute(EventGroup, CUPTI_EVENT_GROUP_ATTR_EVENTS, &Size, EventIds));
 
                     // Accumulate normalized event values
-                    for (uint32_t j = 0; j < numEvents; j++)
+                    for (uint32_t J = 0; J < NumEvents; J++)
                     {
-                        uint64_t sum = 0;
-                        for (uint32_t k = 0; k < numInstances; k++)
+                        uint64_t Sum = 0;
+                        for (uint32_t K = 0; K < NumInstances; K++)
                         {
-                            sum += eventValues[j * numInstances + k];
+                            Sum += EventValues[J * NumInstances + K];
                         }
 
                         // Normalize: (sum * numTotalInstances) / numInstances
-                        uint64_t normalizedValue = (sum * numTotalInstances) / numInstances;
+                        uint64_t NormalizedValue = (Sum * NumTotalInstances) / NumInstances;
 
                         // Find which metric event this corresponds to
-                        for (uint32_t k = 0; k < metricData->numEvents; k++)
+                        for (uint32_t K = 0; K < MetricData->NumEvents; K++)
                         {
-                            if (metricData->eventIdArray[k] == eventIds[j])
+                            if (MetricData->EventIdArray[K] == EventIds[J])
                             {
-                                metricData->eventValueArray[k] = normalizedValue;
-                                printf("Event %d value: %llu (normalized)\n", k, (unsigned long long)normalizedValue);
+                                MetricData->EventValueArray[K] = NormalizedValue;
+                                printf("Event %d value: %llu (normalized)\n", K, (unsigned long long)NormalizedValue);
                                 break;
                             }
                         }
                     }
 
-                    CUPTI_CALL(cuptiEventGroupDisable(eventGroup));
-                    free(eventValues);
-                    free(eventIds);
+                    CUPTI_CALL(cuptiEventGroupDisable(EventGroup));
+                    free(EventValues);
+                    free(EventIds);
                 }
 
-                eventGroupSetIndex++;
+                EventGroupSetIndex++;
             }
         }
     }
 }
 
 // Initialize CUPTI metric collection
-void initializeMetric(CUdevice device, const char *metricName)
+void InitializeMetric(CUdevice Device, const char *MetricName)
 {
-    metricData.device = device;
+    MetricData.Device = Device;
 
     // Get metric ID
-    CUPTI_CALL(cuptiMetricGetIdFromName(device, metricName, &metricData.metricId));
+    CUPTI_CALL(cuptiMetricGetIdFromName(Device, MetricName, &MetricData.MetricId));
 
     // Get number of events required for this metric
-    CUPTI_CALL(cuptiMetricGetNumEvents(metricData.metricId, (uint32_t *)&metricData.numEvents));
-    printf("Metric '%s' requires %d events\n", metricName, metricData.numEvents);
+    CUPTI_CALL(cuptiMetricGetNumEvents(MetricData.MetricId, (uint32_t *)&MetricData.NumEvents));
+    printf("Metric '%s' requires %d events\n", MetricName, MetricData.NumEvents);
 
     // Allocate space for events
-    metricData.eventIdArray = (CUpti_EventID *)malloc(metricData.numEvents * sizeof(CUpti_EventID));
-    metricData.eventValueArray = (uint64_t *)malloc(metricData.numEvents * sizeof(uint64_t));
-    memset(metricData.eventValueArray, 0, metricData.numEvents * sizeof(uint64_t));
+    MetricData.EventIdArray = (CUpti_EventID *)malloc(MetricData.NumEvents * sizeof(CUpti_EventID));
+    MetricData.EventValueArray = (uint64_t *)malloc(MetricData.NumEvents * sizeof(uint64_t));
+    memset(MetricData.EventValueArray, 0, MetricData.NumEvents * sizeof(uint64_t));
 
     // Get the events required for the metric
-    size_t eventArraySize = metricData.numEvents;
-    CUPTI_CALL(cuptiMetricEnumEvents(metricData.metricId, &eventArraySize, metricData.eventIdArray));
+    size_t EventArraySize = MetricData.NumEvents;
+    CUPTI_CALL(cuptiMetricEnumEvents(MetricData.MetricId, &EventArraySize, MetricData.EventIdArray));
 
     // Create event group sets
-    CUcontext context;
-    DRIVER_API_CALL(cuCtxCreate(&context, 0, device));
-    CUPTI_CALL(cuptiEventGroupSetsCreate(context, metricData.numEvents * sizeof(CUpti_EventID), metricData.eventIdArray,
-                                         &metricData.eventGroupSets));
+    CUcontext Context;
+    DRIVER_API_CALL(cuCtxCreate(&Context, 0, Device));
+    CUPTI_CALL(cuptiEventGroupSetsCreate(Context, MetricData.NumEvents * sizeof(CUpti_EventID), MetricData.EventIdArray,
+                                         &MetricData.EventGroupSets));
 
-    metricData.eventGroupSetCount = metricData.eventGroupSets->numSets;
-    printf("Created %d event group sets\n", metricData.eventGroupSetCount);
+    MetricData.EventGroupSetCount = MetricData.EventGroupSets->numSets;
+    printf("Created %d event group sets\n", MetricData.EventGroupSetCount);
 }
 
 // Calculate and display the metric value
-void calculateMetricValue(const char *metricName)
+void CalculateMetricValue(const char *MetricName)
 {
-    CUpti_MetricValue metricValue;
+    CUpti_MetricValue MetricValue;
 
     // Calculate the metric value from collected events
-    CUPTI_CALL(cuptiMetricGetValue(metricData.device, metricData.metricId, metricData.numEvents * sizeof(CUpti_EventID),
-                                   metricData.eventIdArray, metricData.numEvents * sizeof(uint64_t),
-                                   metricData.eventValueArray, 0, &metricValue));
+    CUPTI_CALL(cuptiMetricGetValue(MetricData.Device, MetricData.MetricId, MetricData.NumEvents * sizeof(CUpti_EventID),
+                                   MetricData.EventIdArray, MetricData.NumEvents * sizeof(uint64_t),
+                                   MetricData.EventValueArray, 0, &MetricValue));
 
     // Print the result - simplified to avoid union member issues
-    printf("Metric %s calculated successfully\n", metricName);
+    printf("Metric %s calculated successfully\n", MetricName);
 }
 
 // Vector addition test function
-void runVectorAdd()
+void RunVectorAdd()
 {
-    int *h_A, *h_B, *h_C;
-    int *d_A, *d_B, *d_C;
-    size_t size = N * sizeof(int);
+    int *HA, *HB, *HC;
+    int *DA, *DB, *DC;
+    size_t Size = N * sizeof(int);
 
     // Allocate host memory
-    h_A = (int *)malloc(size);
-    h_B = (int *)malloc(size);
-    h_C = (int *)malloc(size);
+    HA = (int *)malloc(Size);
+    HB = (int *)malloc(Size);
+    HC = (int *)malloc(Size);
 
     // Initialize host arrays
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        h_A[i] = i;
-        h_B[i] = i * 2;
+        HA[I] = I;
+        HB[I] = I * 2;
     }
 
     // Allocate device memory
-    RUNTIME_API_CALL(cudaMalloc((void **)&d_A, size));
-    RUNTIME_API_CALL(cudaMalloc((void **)&d_B, size));
-    RUNTIME_API_CALL(cudaMalloc((void **)&d_C, size));
+    RUNTIME_API_CALL(cudaMalloc((void **)&DA, Size));
+    RUNTIME_API_CALL(cudaMalloc((void **)&DB, Size));
+    RUNTIME_API_CALL(cudaMalloc((void **)&DC, Size));
 
     // Copy data to device
-    RUNTIME_API_CALL(cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice));
-    RUNTIME_API_CALL(cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice));
+    RUNTIME_API_CALL(cudaMemcpy(DA, HA, Size, cudaMemcpyHostToDevice));
+    RUNTIME_API_CALL(cudaMemcpy(DB, HB, Size, cudaMemcpyHostToDevice));
 
     // Launch kernel (this will trigger our callbacks)
-    int threadsPerBlock = 256;
-    int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
-    printf("Launching kernel: blocks %d, threads per block %d\n", blocksPerGrid, threadsPerBlock);
+    int ThreadsPerBlock = 256;
+    int BlocksPerGrid = (N + ThreadsPerBlock - 1) / ThreadsPerBlock;
+    printf("Launching kernel: blocks %d, threads per block %d\n", BlocksPerGrid, ThreadsPerBlock);
 
-    VecAdd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_B, d_C, N);
+    VecAdd<<<BlocksPerGrid, ThreadsPerBlock>>>(DA, DB, DC, N);
 
     // Wait for kernel to complete
     RUNTIME_API_CALL(cudaDeviceSynchronize());
 
     // Copy result back to host
-    RUNTIME_API_CALL(cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost));
+    RUNTIME_API_CALL(cudaMemcpy(HC, DC, Size, cudaMemcpyDeviceToHost));
 
     // Verify result
-    for (int i = 0; i < N; i++)
+    for (int I = 0; I < N; I++)
     {
-        if (h_C[i] != h_A[i] + h_B[i])
+        if (HC[I] != HA[I] + HB[I])
         {
-            printf("Error: result verification failed at element %d\n", i);
+            printf("Error: result verification failed at element %d\n", I);
             exit(-1);
         }
     }
     printf("Vector addition completed successfully!\n");
 
     // Cleanup
-    free(h_A);
-    free(h_B);
-    free(h_C);
-    RUNTIME_API_CALL(cudaFree(d_A));
-    RUNTIME_API_CALL(cudaFree(d_B));
-    RUNTIME_API_CALL(cudaFree(d_C));
+    free(HA);
+    free(HB);
+    free(HC);
+    RUNTIME_API_CALL(cudaFree(DA));
+    RUNTIME_API_CALL(cudaFree(DB));
+    RUNTIME_API_CALL(cudaFree(DC));
 }
 
 int main()
 {
-    CUdevice device;
-    int deviceCount;
-    char deviceName[256];
-    const char *metricName = "sm__inst_executed";
+    CUdevice Device;
+    int DeviceCount;
+    char DeviceName[256];
+    const char *MetricName = "sm__inst_executed";
 
     // Initialize CUDA
     DRIVER_API_CALL(cuInit(0));
-    DRIVER_API_CALL(cuDeviceGetCount(&deviceCount));
+    DRIVER_API_CALL(cuDeviceGetCount(&DeviceCount));
 
-    if (deviceCount == 0)
+    if (DeviceCount == 0)
     {
         printf("Error: No CUDA devices found\n");
         return -1;
     }
 
     // Use first device
-    DRIVER_API_CALL(cuDeviceGet(&device, 0));
-    DRIVER_API_CALL(cuDeviceGetName(deviceName, sizeof(deviceName), device));
-    printf("Using CUDA Device: %s\n", deviceName);
+    DRIVER_API_CALL(cuDeviceGet(&Device, 0));
+    DRIVER_API_CALL(cuDeviceGetName(DeviceName, sizeof(DeviceName), Device));
+    printf("Using CUDA Device: %s\n", DeviceName);
 
     // Check if metric is available
-    CUpti_MetricID tempMetricId;
-    CUptiResult result = cuptiMetricGetIdFromName(device, metricName, &tempMetricId);
-    if (result != CUPTI_SUCCESS)
+    CUpti_MetricID TempMetricId;
+    CUptiResult Result = cuptiMetricGetIdFromName(Device, MetricName, &TempMetricId);
+    if (Result != CUPTI_SUCCESS)
     {
-        printf("Error: Metric '%s' is not available on this device\n", metricName);
+        printf("Error: Metric '%s' is not available on this device\n", MetricName);
         printf("This may be because the device doesn't support this metric or you need newer drivers\n");
         return -1;
     }
 
-    printf("Measuring metric: %s\n", metricName);
+    printf("Measuring metric: %s\n", MetricName);
 
     // Initialize metric collection
-    initializeMetric(device, metricName);
+    InitializeMetric(Device, MetricName);
 
     // Subscribe to CUDA runtime callbacks
-    CUPTI_CALL(cuptiSubscribe(&subscriber, (CUpti_CallbackFunc)getMetricValueCallback, &metricData));
+    CUPTI_CALL(cuptiSubscribe(&Subscriber, (CUpti_CallbackFunc)GetMetricValueCallback, &MetricData));
     CUPTI_CALL(
-        cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API, CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020));
-    CUPTI_CALL(cuptiEnableCallback(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API,
+        cuptiEnableCallback(1, Subscriber, CUPTI_CB_DOMAIN_RUNTIME_API, CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020));
+    CUPTI_CALL(cuptiEnableCallback(1, Subscriber, CUPTI_CB_DOMAIN_RUNTIME_API,
                                    CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000));
 
     // Run the kernel multiple times if we have multiple event group sets
-    eventGroupSetIndex = 0;
-    for (int i = 0; i < metricData.eventGroupSetCount; i++)
+    EventGroupSetIndex = 0;
+    for (int I = 0; I < MetricData.EventGroupSetCount; I++)
     {
-        printf("\n=== Pass %d ===\n", i);
-        runVectorAdd();
+        printf("\n=== Pass %d ===\n", I);
+        RunVectorAdd();
     }
 
     // Calculate and display the final metric value
     printf("\n=== Final Results ===\n");
-    calculateMetricValue(metricName);
+    CalculateMetricValue(MetricName);
 
     // Cleanup
-    CUPTI_CALL(cuptiUnsubscribe(subscriber));
-    CUPTI_CALL(cuptiEventGroupSetsDestroy(metricData.eventGroupSets));
-    free(metricData.eventIdArray);
-    free(metricData.eventValueArray);
+    CUPTI_CALL(cuptiUnsubscribe(Subscriber));
+    CUPTI_CALL(cuptiEventGroupSetsDestroy(MetricData.EventGroupSets));
+    free(MetricData.EventIdArray);
+    free(MetricData.EventValueArray);
 
     printf("Profiling completed!\n");
     return 0;

@@ -8,8 +8,8 @@ typedef float f32;
 
 #include "day_001_macros.h"
 
-#define Min(_a, _b) (_a < _b) ? _a : _b
-#define Max(_a, _b) (_a > _b) ? _a : _b
+#define MIN(_a, _b) (_a < _b) ? _a : _b
+#define MAX(_a, _b) (_a > _b) ? _a : _b
 
 enum test_mode
 {
@@ -57,8 +57,8 @@ static void EndTime(cuda_repetition_tester *Tester)
         fprintf(stderr, "ERROR | cudaEventElapsedTime\n");
     }
 
-    Tester->MinTimeMs = Min(Tester->MinTimeMs, ElapsedTimeMS);
-    Tester->MaxTimeMs = Max(Tester->MaxTimeMs, ElapsedTimeMS);
+    Tester->MinTimeMs = MIN(Tester->MinTimeMs, ElapsedTimeMS);
+    Tester->MaxTimeMs = MAX(Tester->MaxTimeMs, ElapsedTimeMS);
     Tester->TotalTimeMs += ElapsedTimeMS;
 }
 
@@ -138,13 +138,13 @@ static b32 IsTesting(cuda_repetition_tester *Tester)
 
             // Print progress bar
             fprintf(stdout, "\rProgress: [");
-            for (u32 i = 0; i < BarWidth; i++)
+            for (u32 I = 0; I < BarWidth; I++)
             {
-                if (i < FilledBars)
+                if (I < FilledBars)
                 {
                     fprintf(stdout, "=");
                 }
-                else if (i == FilledBars)
+                else if (I == FilledBars)
                 {
                     fprintf(stdout, ">");
                 }

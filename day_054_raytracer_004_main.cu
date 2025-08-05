@@ -141,9 +141,9 @@ __global__ void RenderScene(u8 *Image, scene SceneData, u32 Width, u32 Height)
         f32 Background = (f32)Image[Row * Width + Col];
         f32 FinalColor = Background;
 
-        for (u32 i = 0; i < SceneData.Count; i++)
+        for (u32 I = 0; I < SceneData.Count; I++)
         {
-            primitive Prim = SceneData.Primitives[i];
+            primitive Prim = SceneData.Primitives[I];
             f32 Alpha = 0.0f;
 
             if (Prim.Type == PRIMITIVE_CIRCLE)
@@ -202,18 +202,18 @@ void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrimitives,
 
     vec2<f32> *CircleCenters = (vec2<f32> *)malloc(sizeof(vec2<f32>) * NumCircles);
 
-    for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
     {
         vec2<f32> Center = {RandomFloat(0.1f, 0.9f), RandomFloat(0.1f, 0.9f)};
         f32 Radius = RandomFloat(0.02f, 0.05f);
         u8 Color = RandomColor();
 
-        CircleCenters[i] = Center;
+        CircleCenters[I] = Center;
         Primitives[Count++] = CreateCircle(Center, Radius, Color);
     }
 
     u32 NumConnections = NumCircles + rand() % NumCircles;
-    for (u32 i = 0; i < NumConnections && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumConnections && Count < MaxPrimitives; I++)
     {
         u32 Index1 = rand() % NumCircles;
         u32 Index2 = rand() % NumCircles;
@@ -235,26 +235,26 @@ void GenerateConnectedCircles(primitive *Primitives, u32 &Count, u32 MaxPrimitiv
 
     vec2<f32> *CircleCenters = (vec2<f32> *)malloc(sizeof(vec2<f32>) * NumCircles);
 
-    for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
     {
-        f32 Angle = (f32)i / (f32)NumCircles * 2.0f * 3.14159f;
+        f32 Angle = (f32)I / (f32)NumCircles * 2.0f * 3.14159f;
         f32 Radius = 0.3f;
         vec2<f32> Center = {0.5f + Radius * cosf(Angle), 0.5f + Radius * sinf(Angle)};
-        CircleCenters[i] = Center;
+        CircleCenters[I] = Center;
 
         Primitives[Count++] = CreateCircle(Center, 0.03f, 200);
     }
 
-    for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
     {
-        u32 NextIndex = (i + 1) % NumCircles;
-        Primitives[Count++] = CreateLine(CircleCenters[i], CircleCenters[NextIndex], 150);
+        u32 NextIndex = (I + 1) % NumCircles;
+        Primitives[Count++] = CreateLine(CircleCenters[I], CircleCenters[NextIndex], 150);
     }
 
-    for (u32 i = 0; i < NumCircles && Count < MaxPrimitives; i++)
+    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
     {
         vec2<f32> Center = {0.5f, 0.5f};
-        Primitives[Count++] = CreateLine(CircleCenters[i], Center, 100);
+        Primitives[Count++] = CreateLine(CircleCenters[I], Center, 100);
     }
 
     if (Count < MaxPrimitives)
@@ -271,9 +271,9 @@ int main(int argc, char *argv[])
 
     srand((unsigned int)time(NULL));
 
-    u8 *d_Image;
-    cudaMalloc(&d_Image, sizeof(u8) * Opts.Width * Opts.Height);
-    cudaMemset(d_Image, 0, sizeof(u8) * Opts.Width * Opts.Height);
+    u8 *DImage;
+    cudaMalloc(&DImage, sizeof(u8) * Opts.Width * Opts.Height);
+    cudaMemset(DImage, 0, sizeof(u8) * Opts.Width * Opts.Height);
 
     u32 MaxPrimitives = 1024;
     primitive *Primitives = (primitive *)malloc(sizeof(primitive) * MaxPrimitives);
@@ -282,24 +282,24 @@ int main(int argc, char *argv[])
     u32 NumCircles = 64;
     GenerateRandomCircles(Primitives, PrimitiveCount, MaxPrimitives, NumCircles);
 
-    primitive *d_Primitives;
-    cudaMalloc(&d_Primitives, sizeof(primitive) * PrimitiveCount);
-    cudaMemcpy(d_Primitives, Primitives, sizeof(primitive) * PrimitiveCount, cudaMemcpyHostToDevice);
+    primitive *DPrimitives;
+    cudaMalloc(&DPrimitives, sizeof(primitive) * PrimitiveCount);
+    cudaMemcpy(DPrimitives, Primitives, sizeof(primitive) * PrimitiveCount, cudaMemcpyHostToDevice);
 
-    scene SceneData = {d_Primitives, PrimitiveCount};
+    scene SceneData = {DPrimitives, PrimitiveCount};
 
     dim3 BlockDim(16, 16);
     dim3 GridDim((Opts.Width + 16 - 1) / 16, (Opts.Height + 16 - 1) / 16);
 
-    RenderScene<<<GridDim, BlockDim>>>(d_Image, SceneData, Opts.Width, Opts.Height);
+    RenderScene<<<GridDim, BlockDim>>>(DImage, SceneData, Opts.Width, Opts.Height);
 
     u8 *Image = (u8 *)malloc(sizeof(u8) * Opts.Width * Opts.Height);
-    cudaMemcpy(Image, d_Image, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
+    cudaMemcpy(Image, DImage, sizeof(u8) * Opts.Width * Opts.Height, cudaMemcpyDeviceToHost);
 
     stbi_write_jpg(Opts.OutputFilename, Opts.Width, Opts.Height, 1, Image, 100);
 
     free(Image);
     free(Primitives);
-    cudaFree(d_Image);
-    cudaFree(d_Primitives);
+    cudaFree(DImage);
+    cudaFree(DPrimitives);
 }

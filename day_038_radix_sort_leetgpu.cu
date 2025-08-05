@@ -86,40 +86,40 @@ __global__ void RadixSort(const unsigned int *Input, unsigned int *Output, int N
         // Partition based on bit value
         if (Tid < N)
         {
-            int bit_val = (Shared[Tx] >> Bit) & 1;
-            int pos = 0;
+            int BitVal = (Shared[Tx] >> Bit) & 1;
+            int Pos = 0;
 
-            if (bit_val == 0)
+            if (BitVal == 0)
             {
                 // Count zeros before this position
-                for (int i = 0; i < Tx; i++)
+                for (int I = 0; I < Tx; I++)
                 {
-                    if (Tid - Tx + i < N)
+                    if (Tid - Tx + I < N)
                     {
-                        int prev_bit = (Shared[i] >> Bit) & 1;
-                        if (prev_bit == 0)
-                            pos++;
+                        int PrevBit = (Shared[I] >> Bit) & 1;
+                        if (PrevBit == 0)
+                            Pos++;
                     }
                 }
             }
             else
             {
                 // Count ones before this position
-                pos = Ones;
-                for (int i = 0; i < Tx; i++)
+                Pos = Ones;
+                for (int I = 0; I < Tx; I++)
                 {
-                    if (Tid - Tx + i < N)
+                    if (Tid - Tx + I < N)
                     {
-                        int prev_bit = (Shared[i] >> Bit) & 1;
-                        if (prev_bit == 1)
-                            pos++;
+                        int PrevBit = (Shared[I] >> Bit) & 1;
+                        if (PrevBit == 1)
+                            Pos++;
                     }
                 }
             }
 
-            if (pos < N)
+            if (Pos < N)
             {
-                Output[blockIdx.x * blockDim.x + pos] = Shared[Tx];
+                Output[blockIdx.x * blockDim.x + Pos] = Shared[Tx];
             }
         }
         __syncthreads();
@@ -128,8 +128,8 @@ __global__ void RadixSort(const unsigned int *Input, unsigned int *Output, int N
 #endif
 
 // input, output are device pointers
-void solve(const unsigned int *input, unsigned int *output, int N)
+void Solve(const unsigned int *Input, unsigned int *Output, int N)
 {
     int GridDim = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    RadixSort<<<GridDim, BLOCK_SIZE>>>(input, output, N);
+    RadixSort<<<GridDim, BLOCK_SIZE>>>(Input, Output, N);
 }

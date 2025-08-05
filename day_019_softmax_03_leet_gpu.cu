@@ -6,24 +6,24 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef float f32;
 
-#define Max(_a, _b) (_a > _b) ? _a : _b
-#define Min(_a, _b) (_a < _b) ? _a : _b
+#define MAX(_a, _b) (_a > _b) ? _a : _b
+#define MIN(_a, _b) (_a < _b) ? _a : _b
 
 #define BLOCK_DIM 256
 #define COARSE_FACTOR 2
-__device__ float atomicMaxFloat(float *address, float val)
+__device__ float AtomicMaxFloat(float *Address, float Val)
 {
-    int *address_as_int = (int *)address;
-    int old = *address_as_int, assumed;
+    int *AddressAsInt = (int *)Address;
+    int Old = *AddressAsInt, Assumed;
     do
     {
-        assumed = old;
-        old = atomicCAS(address_as_int, assumed, __float_as_int(fmaxf(val, __int_as_float(assumed))));
-    } while (assumed != old);
-    return __int_as_float(old);
+        Assumed = Old;
+        Old = atomicCAS(AddressAsInt, Assumed, __float_as_int(fmaxf(Val, __int_as_float(Assumed))));
+    } while (Assumed != Old);
+    return __int_as_float(Old);
 }
 
-__global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u32 N)
+__global__ void SoftMaxKernel02GlobalMax(const f32 *Input, f32 *GlobalMax, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -36,7 +36,7 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     {
         if ((Tid + BLOCK_DIM * I) < N)
         {
-            Shared[Tx] = Max(Shared[Tx], Input[Tid + BLOCK_DIM * I]);
+            Shared[Tx] = MAX(Shared[Tx], Input[Tid + BLOCK_DIM * I]);
         }
     }
 
@@ -46,7 +46,7 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
         __syncthreads();
         if (Tx < Stride)
         {
-            Shared[Tx] = Max(Shared[Tx], Shared[Tx + Stride]);
+            Shared[Tx] = MAX(Shared[Tx], Shared[Tx + Stride]);
         }
     }
 
@@ -54,11 +54,11 @@ __global__ void SoftMax_Kernel_02_GlobalMax(const f32 *Input, f32 *GlobalMax, u3
     // printf("Tid = %d | Tx = %d | Shared[Tx] = %.5f\n", Tid, Tx, Shared[Tx]);
     if (Tx == 0)
     {
-        atomicMaxFloat(GlobalMax, Shared[0]);
+        AtomicMaxFloat(GlobalMax, Shared[0]);
     }
 }
 
-__global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *GlobalMax, f32 *GlobalMaxSum, u32 N)
+__global__ void SoftMaxKernel02GlobalMaxSum(const f32 *Input, const f32 *GlobalMax, f32 *GlobalMaxSum, u32 N)
 {
     __shared__ f32 Shared[BLOCK_DIM];
 
@@ -94,7 +94,7 @@ __global__ void SoftMax_Kernel_02_GlobalMaxSum(const f32 *Input, const f32 *Glob
     }
 }
 
-__global__ void SoftMax_Kernel_02_Map(const f32 *Input, const f32 *GlobalMax, const f32 *GlobalMaxSum, f32 *Output,
+__global__ void SoftMaxKernel02Map(const f32 *Input, const f32 *GlobalMax, const f32 *GlobalMaxSum, f32 *Output,
                                       u32 N)
 {
     u32 Tid = blockDim.x * blockIdx.x + threadIdx.x;
@@ -105,26 +105,26 @@ __global__ void SoftMax_Kernel_02_Map(const f32 *Input, const f32 *GlobalMax, co
     }
 }
 
-static void GPU_SoftMax_02(const f32 *Device_Input, f32 *Device_Output, u32 N)
+static void GpuSoftMax02(const f32 *DeviceInput, f32 *DeviceOutput, u32 N)
 {
-    u32 ThreadsPerBlock = Min(BLOCK_DIM, N);
+    u32 ThreadsPerBlock = MIN(BLOCK_DIM, N);
     u32 BlocksPerGrid = (N + (ThreadsPerBlock * COARSE_FACTOR) - 1) / (ThreadsPerBlock * COARSE_FACTOR);
 
-    f32 *Device_GlobalMax, *Device_GlobalMaxSum;
-    cudaMalloc(&Device_GlobalMax, sizeof(f32));
-    cudaMalloc(&Device_GlobalMaxSum, sizeof(f32));
+    f32 *DeviceGlobalMax, *DeviceGlobalMaxSum;
+    cudaMalloc(&DeviceGlobalMax, sizeof(f32));
+    cudaMalloc(&DeviceGlobalMaxSum, sizeof(f32));
 
-    SoftMax_Kernel_02_GlobalMax<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax, N);
+    SoftMaxKernel02GlobalMax<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax, N);
     // DbgCudaF32(Device_GlobalMax);
-    SoftMax_Kernel_02_GlobalMaxSum<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax,
-                                                                       Device_GlobalMaxSum, N);
+    SoftMaxKernel02GlobalMaxSum<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax,
+                                                                       DeviceGlobalMaxSum, N);
 
     // DbgCudaF32(Device_GlobalMaxSum);
     BlocksPerGrid = (N + (ThreadsPerBlock * 1) - 1) / (ThreadsPerBlock * 1);
-    SoftMax_Kernel_02_Map<<<BlocksPerGrid, ThreadsPerBlock>>>(Device_Input, Device_GlobalMax, Device_GlobalMaxSum,
-                                                              Device_Output, N);
-    cudaFree(Device_GlobalMax);
-    cudaFree(Device_GlobalMax);
+    SoftMaxKernel02Map<<<BlocksPerGrid, ThreadsPerBlock>>>(DeviceInput, DeviceGlobalMax, DeviceGlobalMaxSum,
+                                                              DeviceOutput, N);
+    cudaFree(DeviceGlobalMax);
+    cudaFree(DeviceGlobalMax);
 }
 #undef COARSE_FACTOR
 #undef BLOCK_DIM

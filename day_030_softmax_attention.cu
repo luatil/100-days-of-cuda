@@ -3,18 +3,17 @@
 #include "solve.h"
 #include <cuda_runtime.h>
 #endif
-#include <cmath>
 #include <cfloat>
+#include <cmath>
 
-
-#define Max(a, b) ((a) > (b) ? (a) : (b))
-#define Min(a, b) ((a) < (b) ? (a) : (b))
-
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #ifndef LEET_GPU_NOIMPORT
 __global__
 #endif
-void AttentionKernel(const float *Query, const float *Key, const float *Value, float *Out, int M, int N, int d)
+    void
+    AttentionKernel(const float *Query, const float *Key, const float *Value, float *Out, int M, int N, int D)
 {
     // Let's start with Q*K.T * V - this will result in a MxN matrix that we can output to the console
     // and start working on.
@@ -24,18 +23,18 @@ void AttentionKernel(const float *Query, const float *Key, const float *Value, f
     // Do I need to materialize the internal matrix?
 
     // Considering here that I need to allocate a temporary matrix of MxN to hold the value of Q*K.T
-    float *Internal = (float*)malloc(sizeof(float)*M*N);
+    float *Internal = (float *)malloc(sizeof(float) * M * N);
 
-    for(int I = 0; I < M; I++)
+    for (int I = 0; I < M; I++)
     {
         for (int J = 0; J < N; J++)
         {
             float Sum = 0.0f;
-            for (int K = 0; K < d; K++)
+            for (int K = 0; K < D; K++)
             {
-                Sum += Query[I*d+K] * Key[J*d+K];
+                Sum += Query[I * D + K] * Key[J * D + K];
             }
-            Internal[I*N+J] = Sum / sqrtf((float)d);
+            Internal[I * N + J] = Sum / sqrtf((float)D);
         }
     }
 
@@ -46,12 +45,12 @@ void AttentionKernel(const float *Query, const float *Key, const float *Value, f
     // 2. Calculate the exponential sum
     // 3. Divide each element by the exponential sum
 
-    for (float *Row = Internal; (Row - Internal) < M*N; Row += N)
+    for (float *Row = Internal; (Row - Internal) < M * N; Row += N)
     {
         float MaxValue = -FLT_MAX;
         for (float *Col = Row; (Col - Row) < N; Col++)
         {
-            MaxValue = Max(MaxValue, *Col);
+            MaxValue = MAX(MaxValue, *Col);
         }
         float ExpSum = 0.0f;
         for (float *Col = Row; (Col - Row) < N; Col++)
@@ -66,16 +65,16 @@ void AttentionKernel(const float *Query, const float *Key, const float *Value, f
     }
 
     // Now we just need to do another matmul to get to the output value
-    for(int I = 0; I < M; I++)
+    for (int I = 0; I < M; I++)
     {
-        for (int J = 0; J < d; J++)
+        for (int J = 0; J < D; J++)
         {
             float Sum = 0.0f;
             for (int K = 0; K < N; K++)
             {
-                Sum += Internal[I*N+K] * Value[K*d+J];
+                Sum += Internal[I * N + K] * Value[K * D + J];
             }
-            Out[I*d+J] = Sum;
+            Out[I * D + J] = Sum;
         }
     }
 
@@ -85,10 +84,10 @@ void AttentionKernel(const float *Query, const float *Key, const float *Value, f
     }
 }
 
-
 #ifndef LEET_GPU_NOIMPORT
 // Q, K, V, output are device pointers
-void solve(const float* Q, const float* K, const float* V, float* output, int M, int N, int d) {
-    AttentionKernel<<<1,1>>>(Q, K, V, output, M, N, d);
+void solve(const float *Q, const float *K, const float *V, float *output, int M, int N, int d)
+{
+    AttentionKernel<<<1, 1>>>(Q, K, V, output, M, N, d);
 }
 #endif

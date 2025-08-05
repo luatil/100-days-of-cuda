@@ -49,15 +49,14 @@ int main(int ArgumentCount, char **Arguments)
         {
             TimeCudaBandwidth("Add Kernel", 2 * SizeInBytes, SizeInBytes, 1.0f / (3.0f * 4.0f));
 
-	    int MinGridSize = 0, BlockSize = 0, GridSize = 0;
+            int MinGridSize = 0, BlockSize = 0, GridSize = 0;
 
             cudaOccupancyMaxPotentialBlockSize(&MinGridSize, &BlockSize, AddKernel, 0, 0);
 
+            fprintf(stdout, "MinGridSize=%d\n", MinGridSize);
+            fprintf(stdout, "BlockSize=%d\n", BlockSize);
 
-	    fprintf(stdout, "MinGridSize=%d\n", MinGridSize);
-	    fprintf(stdout, "BlockSize=%d\n", BlockSize);
-
-	    GridSize = (N + BlockSize - 1) / BlockSize;
+            GridSize = (N + BlockSize - 1) / BlockSize;
 
             AddKernel<<<GridSize, BlockSize>>>(DeviceA, DeviceB, DeviceC, N);
         }
