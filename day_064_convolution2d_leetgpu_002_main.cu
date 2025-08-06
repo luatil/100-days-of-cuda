@@ -1,29 +1,59 @@
-// #define LEET_GPU
+#define LEET_GPU
 #include <cuda_runtime.h>
 #include <stdio.h>
 
-__global__ void Convolution2D(const float *Input, const float *Kernel, float *Result, int InputWidth, int InputHeight,
-                              int KernelWidth, int KernelHeight)
+__constant__ float ConstKernel[21 * 21];
+
+template <int BlockWidth = 16>
+__global__ void Convolution2D(const float *Input, float *Result, int InputWidth, int InputHeight, int KernelWidth,
+                              int KernelHeight)
 {
-    int Col = blockIdx.x * blockDim.x + threadIdx.x;
-    int Row = blockIdx.y * blockDim.y + threadIdx.y;
+    int Tx = threadIdx.x;
+    int Ty = threadIdx.y;
+    int Col = blockIdx.x * blockDim.x + Tx;
+    int Row = blockIdx.y * blockDim.y + Ty;
+
+    int HaloWidth = KernelWidth / 2;
+    int HaloHeight = KernelHeight / 2;
+    int TileWidth = BlockWidth + 2 * HaloWidth;
+    int TileHeight = BlockWidth + 2 * HaloHeight;
+
+    extern __shared__ float SharedInput[];
+
+    // int SharedRow = Ty - HaloHeight;
+    // int SharedCol = Tx - HaloWidth;
+
+    for (int I = Ty; I < TileHeight; I += blockDim.y)
+    {
+        for (int J = Tx; J < TileWidth; J += blockDim.x)
+        {
+            int InputRow = blockIdx.y * blockDim.y + I - HaloHeight;
+            int InputCol = blockIdx.x * blockDim.x + J - HaloWidth;
+
+            if (InputRow >= 0 && InputRow < InputHeight && InputCol >= 0 && InputCol < InputWidth)
+            {
+                SharedInput[I * TileWidth + J] = Input[InputRow * InputWidth + InputCol];
+            }
+            else
+            {
+                SharedInput[I * TileWidth + J] = 0.0f;
+            }
+        }
+    }
+
+    __syncthreads();
 
     if (Row < InputHeight && Col < InputWidth)
     {
         float Sum = 0.0f;
 
-        for (int M = -KernelHeight / 2; M <= KernelHeight / 2; M++)
+        for (int M = -HaloHeight; M <= HaloHeight; M++)
         {
-            for (int N = -KernelWidth / 2; N <= KernelWidth / 2; N++)
+#pragma unroll
+            for (int N = -HaloWidth; N <= HaloWidth; N++)
             {
-                int InputRow = Row + M;
-                int InputCol = Col + N;
-
-                if (InputRow >= 0 && InputRow < InputHeight && InputCol >= 0 && InputCol < InputWidth)
-                {
-                    Sum += Input[InputRow * InputWidth + InputCol] *
-                           Kernel[(M + KernelHeight / 2) * KernelWidth + (N + KernelWidth / 2)];
-                }
+                int SharedIdx = (Ty + HaloHeight + M) * TileWidth + (Tx + HaloWidth + N);
+                Sum += SharedInput[SharedIdx] * ConstKernel[(M + HaloHeight) * KernelWidth + (N + HaloWidth)];
             }
         }
 
@@ -35,10 +65,16 @@ __global__ void Convolution2D(const float *Input, const float *Kernel, float *Re
 extern "C" void solve(const float *Input, const float *Kernel, float *Output, int InputRows, int InputCols,
                       int KernelRows, int KernelCols)
 {
+    cudaMemcpyToSymbol(ConstKernel, Kernel, KernelRows * KernelCols * sizeof(float));
+
     dim3 BlockSize(16, 16);
     dim3 GridSize((InputRows + BlockSize.x - 1) / BlockSize.x, (InputCols + BlockSize.y - 1) / BlockSize.y);
 
-    Convolution2D<<<GridSize, BlockSize>>>(Input, Kernel, Output, InputRows, InputCols, KernelRows, KernelCols);
+    int TileWidth = 16 + KernelCols - 1;
+    int TileHeight = 16 + KernelRows - 1;
+    int SharedMemSize = TileWidth * TileHeight * sizeof(float);
+
+    Convolution2D<<<GridSize, BlockSize, SharedMemSize>>>(Input, Output, InputRows, InputCols, KernelRows, KernelCols);
 }
 
 #ifndef LEET_GPU
@@ -61,24 +97,6 @@ int main()
     cudaMalloc(&DKernel, KernelSize);
     cudaMalloc(&DResult, ResultSize);
 
-    for (int I = 0; I < 5; I++)
-    {
-        for (int J = 0; J < 5; J++)
-        {
-            printf("%8.3f ", Input[I * 5 + J]);
-        }
-        puts("");
-    }
-    puts("");
-    for (int I = 0; I < 3; I++)
-    {
-        for (int J = 0; J < 3; J++)
-        {
-            printf("%8.3f ", Kernel[I * 3 + J]);
-        }
-        puts("");
-    }
-
     int KernelHeight = 3;
     int KernelWidth = 3;
     int InputWidth = 5;
@@ -96,16 +114,6 @@ int main()
                         7.250,  8.500,  12.000, 13.000, 14.000, 11.000, 12.250, 17.000, 18.000,
                         19.000, 14.750, 11.062, 15.250, 16.000, 16.750, 12.938};
 
-    puts("Result");
-    for (int I = 0; I < 5; I++)
-    {
-        for (int J = 0; J < 5; J++)
-        {
-            printf("%8.3f ", Result[I * 5 + J]);
-        }
-        puts("");
-    }
-
     bool TestPassed = true;
     for (int I = 0; I < 25; I++)
     {
@@ -118,11 +126,11 @@ int main()
 
     if (TestPassed)
     {
-        printf("\nTEST PASSED: All convolution results match expected values\n");
+        printf("TEST PASSED: All convolution results match expected values\n");
     }
     else
     {
-        printf("\nTEST FAILED: Some results do not match expected values\n");
+        printf("TEST FAILED: Some results do not match expected values\n");
     }
 
     cudaFree(DInput);
