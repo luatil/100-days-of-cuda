@@ -23,11 +23,14 @@ build/mandelbrot_cli_dn: day_061_mandelbrot_cli.cu
 build/day_062_dn: day_062_nearest_neighbors_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-build/day_063_dn: day_063_something_main.cu
+build/day_063_dn: day_063_convolution2d_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_063_dn
-	./build/day_063_dn > result.txt
+build/day_064_002_dn: day_064_convolution2d_leetgpu_002_main.cu
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/day_064_002_dn
+	./build/day_064_002_dn > result.txt
 
 test: result.txt
 	diff result.txt goal.txt
