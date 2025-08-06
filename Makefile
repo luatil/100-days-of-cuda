@@ -32,8 +32,24 @@ build/day_064_002_dn: day_064_convolution2d_leetgpu_002_main.cu
 result.txt: build/day_064_002_dn
 	./build/day_064_002_dn > result.txt
 
-test: result.txt
-	diff result.txt goal.txt
+build/%_test_dn: %_test.cu
+	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+.PHONY: test
+test: $(patsubst %_test.cu,build/%_test_dn,$(wildcard *_test.cu))
+	@mkdir -p build
+	@passed=0; failed=0; \
+	for test in $^; do \
+		if ./$$test; then \
+			echo "✓ $$(basename $$test) PASSED"; \
+			passed=$$((passed + 1)); \
+		else \
+			echo "✗ $$(basename $$test) FAILED"; \
+			failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo "Tests completed: $$passed passed, $$failed failed"
+
 
 ~/.local/bin/raytracer: build/raytracer_dn
 	cp build/raytracer_dn ~/.local/bin/raytracer
