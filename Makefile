@@ -29,8 +29,11 @@ build/day_063_dn: day_063_convolution2d_main.cu
 build/day_064_002_dn: day_064_convolution2d_leetgpu_002_main.cu
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_064_002_dn
-	./build/day_064_002_dn > result.txt
+build/day_066_001_dn: day_066_testing_with_munit.cu
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/day_066_001_dn
+	./$< > result.txt
 
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
