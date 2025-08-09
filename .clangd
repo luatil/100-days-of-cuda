@@ -18,3 +18,17 @@ CompileFlags:
 
 Index:
   Background: Build
+
+InlayHints:
+  Enabled: No
+
+Completion:
+  AllScopes: Yes
+
+Diagnostics:
+  ClangTidy:
+    Add: []
+    Remove: [readability-braces-around-statements]
+
+Format:
+  SortIncludes: Never
