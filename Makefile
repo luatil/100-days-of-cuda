@@ -3,7 +3,7 @@ DEBUG_ENABLED = 1
 ################################
 
 # all: view
-all: all-main
+all: result.txt
 
 .PHONY: all-main
 all-main: $(patsubst %_main.cu,build/%_main,$(wildcard *_main.cu))
@@ -14,7 +14,7 @@ build/%_main: %_main.cu | build
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_066_001_dn
+result.txt: build/day_067_top_k_main
 	./$< > result.txt
 
 .PHONY: test
