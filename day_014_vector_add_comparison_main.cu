@@ -83,7 +83,7 @@ int main(int ArgumentCount, char **Arguments)
 
                 int MinGridSize = 0, BlockSize = 0, GridSize = 0;
 
-                cudaOccupancyMaxPotentialBlockSize(&MinGridSize, &BlockSize, AddVector_Float4, 0, 0);
+                cudaOccupancyMaxPotentialBlockSize(&MinGridSize, &BlockSize, AddVectorFloat4, 0, 0);
 
                 GridSize = (N + (BlockSize * 2) - 1) / (BlockSize * 2);
 
@@ -91,7 +91,7 @@ int main(int ArgumentCount, char **Arguments)
                 fprintf(stdout, "GridSize=%d\n", GridSize);
                 fprintf(stdout, "Total Threads=%d\n", GridSize * BlockSize);
 
-                AddVector_Float4<<<GridSize, BlockSize>>>(DeviceA, DeviceB, DeviceC, N);
+                AddVectorFloat4<<<GridSize, BlockSize>>>(DeviceA, DeviceB, DeviceC, N);
             }
 
             // Memcpy Device To Host

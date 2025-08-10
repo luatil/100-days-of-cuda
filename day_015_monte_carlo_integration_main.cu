@@ -23,8 +23,8 @@ struct test_function
     monte_carlo_integration_function *Func;
 };
 test_function TestFunctions[] = {
-    {"cpu", Launch_MonteCarloIntegration_CPU},
-    {"gpu_naive", Launch_MonteCarloIntegration_Naive},
+    {"cpu", LaunchMonteCarloIntegrationCpu},
+    {"gpu_naive", LaunchMonteCarloIntegrationNaive},
 };
 
 static void PrintUsage(const char *ProgramName)

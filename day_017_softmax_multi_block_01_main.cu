@@ -233,7 +233,7 @@ int main()
     }
     fprintf(stdout, "\n");
 
-    Assert(fabsf(sum - 1.0f) < 0.001f);
+    Assert(fabsf(Sum - 1.0f) < 0.001f);
 
     FreeCPU(Input);
     FreeCPU(Output);

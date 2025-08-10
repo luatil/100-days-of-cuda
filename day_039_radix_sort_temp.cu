@@ -25,7 +25,7 @@ __global__ void RadixSortIter(u32 *Input, u32 *Output, u32 *Bits, u32 N, u32 Ite
     }
 
     // NOTE(luatil): This will need to be separated here into 3 different kernel calls.
-    ExclusiveScan(Bits, N);
+    // ExclusiveScan(Bits, N);
 
     if (Tid < N)
     {

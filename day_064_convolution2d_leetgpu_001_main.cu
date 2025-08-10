@@ -1,4 +1,4 @@
-#define LEET_GPU
+// #define LEET_GPU
 #include <cuda_runtime.h>
 #include <stdio.h>
 
@@ -79,10 +79,10 @@ int main()
         puts("");
     }
 
-    int KernelHeight = 3;
-    int KernelWidth = 3;
-    int InputWidth = 5;
-    int InputHeight = 5;
+    // int KernelHeight = 3;
+    // int KernelWidth = 3;
+    // int InputWidth = 5;
+    // int InputHeight = 5;
 
     cudaMemcpy(DInput, Input, InputSize, cudaMemcpyHostToDevice);
     cudaMemcpy(DKernel, Kernel, KernelSize, cudaMemcpyHostToDevice);

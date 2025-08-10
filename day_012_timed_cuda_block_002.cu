@@ -63,9 +63,9 @@ struct cuda_profile_block
     }
 };
 
-#define NAME_CONCAT2(A, B) A##B
-#define NAME_CONCAT(A, B) NameConcat2(A, B)
-#define TIME_CUDA_BLOCK(Name) cuda_profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1, 0, 0, 0.0f);
-#define TIME_CUDA_BANDWIDTH(Name, BytesRead_, BytesWritten_, FlopsPerByte_)                                              \
+#define NameConcat2(A, B) A##B
+#define NameConcat(A, B) NameConcat2(A, B)
+#define TimeCudaBlock(Name) cuda_profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1, 0, 0, 0.0f);
+#define TimeCudaBandwidth(Name, BytesRead_, BytesWritten_, FlopsPerByte_)                                              \
     cuda_profile_block NameConcat(Block, __LINE__)(Name, __COUNTER__ + 1, BytesRead_, BytesWritten_, FlopsPerByte_);
-#define TIME_CUDA_FUNCTION TimeCudaBlock(__func__)
+#define TimeCudaFunction TimeCudaBlock(__func__)

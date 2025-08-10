@@ -96,7 +96,7 @@ int main(int ArgumentCount, char **Arguments)
                 {
                     // TimeCudaBandwidth("Add Kernel", 2 * SizeInBytes, SizeInBytes, 1.0f / (3.0f * 4.0f));
                     BeginTime(&Tester);
-                    AddVector_Float4<<<GridSize, BlockSize>>>(DeviceA, DeviceB, DeviceC, N);
+                    AddVectorFloat4<<<GridSize, BlockSize>>>(DeviceA, DeviceB, DeviceC, N);
                     // cudaDeviceSyncronize(); This should be called by the repetition tester.
                     EndTime(&Tester);
                 }

@@ -1,4 +1,3 @@
-#define LEET_GPU
 #include <cuda_runtime.h>
 #include <stdio.h>
 

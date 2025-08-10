@@ -6,7 +6,7 @@
 
 #define BLOCK_SIZE 256
 
-__global__ void Histogram(const int *Input, int *Histogram, int N, int NumBins)
+__global__ void HistogramKernel(const int *Input, int *Histogram, int N, int NumBins)
 {
     int Tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -20,5 +20,5 @@ __global__ void Histogram(const int *Input, int *Histogram, int N, int NumBins)
 void Solve(const int *Input, int *Histogram, int N, int NumBins)
 {
     int GridDim = (N + BLOCK_SIZE - 1) / BLOCK_SIZE;
-    Histogram<<<GridDim, BLOCK_SIZE>>>(Input, Histogram, N, NumBins);
+    HistogramKernel<<<GridDim, BLOCK_SIZE>>>(Input, Histogram, N, NumBins);
 }

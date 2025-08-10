@@ -68,14 +68,6 @@ __global__ void Kernel_DotProduct(const float *A, const float *B, float *result,
         *result = SharedMem[0];
     }
 }
-void solve(const float *A, const float *B, float *result, int N)
-{
-    Kernel_DotProduct_01<<<1, 1024>>>(A, B, result, N);
-}
-#elif SOLUTION_02
-#include "solve.h"
-#include <cuda_runtime.h>
-#include <stdio.h>
 
 #define BLOCK_DIM 512
 #define COARSE_FACTOR 4

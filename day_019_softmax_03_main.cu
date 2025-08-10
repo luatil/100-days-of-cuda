@@ -65,14 +65,14 @@ static void CpuSoftMax01(const f32 *Input, f32 *Output, u32 N)
     {
         MaxValue = MAX(MaxValue, Input[I]);
     }
-    Dbg(MaxValue);
+    DbgF32(MaxValue);
 
     f32 MaxSum = 0.0f;
     for (u32 I = 0; I < N; I++)
     {
         MaxSum += expf(Input[I] - MaxValue);
     }
-    Dbg(MaxSum);
+    DbgF32(MaxSum);
 
     for (u32 I = 0; I < N; I++)
     {

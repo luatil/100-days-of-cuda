@@ -62,7 +62,7 @@ int main()
     cudaMalloc((void **)&DHistogram, NUM_BINS * sizeof(int));
     cudaMemset(DHistogram, 0, NUM_BINS * sizeof(int));
 
-    solve(DInput, DHistogram, N, NUM_BINS);
+    // solve(DInput, DHistogram, N, NUM_BINS);
     cudaDeviceSynchronize();
 
     int *HHistogram = (int *)malloc(NUM_BINS * sizeof(int));

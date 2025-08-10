@@ -15,11 +15,20 @@
  */
 #include <stdio.h>
 
+static void PrintBinary(unsigned int Num, int Width)
+{
+    for (int I = 0; I < Width; I++)
+    {
+	printf("%d", (Num >> (31 - I)) & 1);
+    }
+    printf("\n");
+}
+
 int main()
 {
     unsigned int Num;
     while (scanf("%u\n", &Num) != EOF)
     {
-        printf("%04b\n", Num);
+	PrintBinary(Num, 8);
     }
 }

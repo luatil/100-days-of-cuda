@@ -19,7 +19,7 @@ int main()
 
     cudaMemcpy(DInput, Input, sizeof(Input), cudaMemcpyHostToDevice);
 
-    solve(DInput, DOutput, sizeof(Input) / sizeof(Input[0]));
+    // solve(DInput, DOutput, sizeof(Input) / sizeof(Input[0]));
 
     cudaMemcpy(Output, DOutput, sizeof(Input), cudaMemcpyDeviceToHost);
 

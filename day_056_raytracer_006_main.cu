@@ -187,25 +187,25 @@ static primitive CreateLine(vec2<f32> P0, vec2<f32> P1, u8 Color = 255, f32 Edge
     return Line;
 }
 
-static void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrimitives, u32 NumCircles)
-{
-    if (NumCircles == 0 || Count >= MaxPrimitives)
-        return;
-
-    vec2<f32> *CircleCenters = (vec2<f32> *)malloc(sizeof(vec2<f32>) * NumCircles);
-
-    for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
-    {
-        vec2<f32> Center = {RandomFloat(0.1f, 0.9f), RandomFloat(0.1f, 0.9f)};
-        f32 Radius = RandomFloat(0.02f, 0.03f);
-        u8 Color = RandomColor(10, 250);
-
-        CircleCenters[I] = Center;
-        Primitives[Count++] = CreateCircle(Center, Radius, Color);
-    }
-
-    free(CircleCenters);
-}
+// static void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrimitives, u32 NumCircles)
+// {
+//     if (NumCircles == 0 || Count >= MaxPrimitives)
+//         return;
+//
+//     vec2<f32> *CircleCenters = (vec2<f32> *)malloc(sizeof(vec2<f32>) * NumCircles);
+//
+//     for (u32 I = 0; I < NumCircles && Count < MaxPrimitives; I++)
+//     {
+//         vec2<f32> Center = {RandomFloat(0.1f, 0.9f), RandomFloat(0.1f, 0.9f)};
+//         f32 Radius = RandomFloat(0.02f, 0.03f);
+//         u8 Color = RandomColor(10, 250);
+//
+//         CircleCenters[I] = Center;
+//         Primitives[Count++] = CreateCircle(Center, Radius, Color);
+//     }
+//
+//     free(CircleCenters);
+// }
 
 // Ray to line
 primitive LineFromRay(ray Ray, u8 Color = 100, f32 EdgeWidth = 0.005f)
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
     primitive *Primitives = (primitive *)malloc(sizeof(primitive) * MaxPrimitives);
     u32 PrimitiveCount = 0;
 
-    u32 NumCircles = 1;
+    // u32 NumCircles = 1;
     // GenerateRandomCircles(Primitives, PrimitiveCount, MaxPrimitives, NumCircles);
 
     primitive Circle1 = CreateCircle({0.3f, 0.4f}, 0.01f, 255);

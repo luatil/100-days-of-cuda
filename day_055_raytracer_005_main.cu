@@ -173,16 +173,16 @@ static primitive CreateCircle(vec2<f32> Center, f32 Radius, u8 Color = 255, f32 
     return Circle;
 }
 
-static primitive CreateLine(vec2<f32> P0, vec2<f32> P1, u8 Color = 255, f32 EdgeWidth = 0.002f, f32 Width = 0.0005f)
-{
-    primitive Line{};
-    Line.Type = PRIMITIVE_LINE;
-    Line.Mat = {Color, EdgeWidth};
-    Line.Line.P0 = P0;
-    Line.Line.P1 = P1;
-    Line.Line.Width = Width;
-    return Line;
-}
+// static primitive CreateLine(vec2<f32> P0, vec2<f32> P1, u8 Color = 255, f32 EdgeWidth = 0.002f, f32 Width = 0.0005f)
+// {
+//     primitive Line{};
+//     Line.Type = PRIMITIVE_LINE;
+//     Line.Mat = {Color, EdgeWidth};
+//     Line.Line.P0 = P0;
+//     Line.Line.P1 = P1;
+//     Line.Line.Width = Width;
+//     return Line;
+// }
 
 static void GenerateRandomCircles(primitive *Primitives, u32 &Count, u32 MaxPrimitives, u32 NumCircles)
 {

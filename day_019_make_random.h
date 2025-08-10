@@ -1,3 +1,5 @@
+#include "day_015_common.h"
+
 struct random_number_generator
 {
     u64 State;
