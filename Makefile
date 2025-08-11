@@ -14,8 +14,14 @@ build/%_main: %_main.cu | build
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_067_top_k_main
-	./$< > result.txt
+input.txt:
+	seq 1 100000000 | shuf > input.txt
+
+sorted.txt: build/day_068_something_main input.txt
+	cat input.txt | time build/day_068_something_main > sorted.txt
+
+result.txt: sorted.txt
+	cat sorted.txt | issorted > result.txt
 
 .PHONY: test
 test: $(patsubst %_test.cu,build/%_test_dn,$(wildcard *_test.cu))
