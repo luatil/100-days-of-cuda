@@ -3,25 +3,24 @@ DEBUG_ENABLED = 1
 ################################
 
 # all: view
-all: result.txt
+all: run
 
 .PHONY: all-main
 all-main: $(patsubst %_main.cu,build/%_main,$(wildcard *_main.cu))
+
+# build/day_069_something_main: day_069_something_main.cu | build
+build/day_069_game_of_life_main: day_069_game_of_life_main.cu | build
+	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@ -lSDL2 -lcupti -lcuda
+
+.PHONY: run-day-069
+run-day-069: build/day_069_game_of_life_main
+	./build/day_069_game_of_life_main
 
 build/%_main: %_main.cu | build
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
-
-input.txt:
-	seq 1 100000000 | shuf > input.txt
-
-sorted.txt: build/day_068_something_main input.txt
-	cat input.txt | time build/day_068_something_main > sorted.txt
-
-result.txt: sorted.txt
-	cat sorted.txt | issorted > result.txt
 
 .PHONY: test
 test: $(patsubst %_test.cu,build/%_test_dn,$(wildcard *_test.cu))
