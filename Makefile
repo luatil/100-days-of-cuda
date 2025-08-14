@@ -3,7 +3,7 @@ DEBUG_ENABLED = 1
 ################################
 
 # all: view
-all: run
+all: result.txt
 
 .PHONY: all-main
 all-main: $(patsubst %_main.cu,build/%_main,$(wildcard *_main.cu))
@@ -21,6 +21,9 @@ build/%_main: %_main.cu | build
 
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
+
+result.txt: build/day_070_read_wav_file_main
+	./$< > result.txt
 
 .PHONY: test
 test: $(patsubst %_test.cu,build/%_test_dn,$(wildcard *_test.cu))
@@ -61,13 +64,13 @@ build/query_device_properties: query_device_properties.cu build
 build:
 	mkdir -p build
 
-run: build/main
-	./build/main
-
 .PHONY: query_device_properties
 query_device_properties: build/query_device_properties
 	./build/query_device_properties
 
+
+data/jfw.wav:
+	curl -o $@ --location https://github.com/ggml-org/whisper.cpp/raw/refs/heads/master/samples/jfk.wav
 
 .PHONY: format
 format:
