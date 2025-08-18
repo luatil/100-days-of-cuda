@@ -22,7 +22,7 @@ build/%_main: %_main.cu | build
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_071_edge_detection_main
+result.txt: build/day_072_bpe_wip_main
 	./$< > result.txt
 
 .PHONY: test
