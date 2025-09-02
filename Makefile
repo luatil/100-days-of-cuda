@@ -12,9 +12,9 @@ all-main: $(patsubst %_main.cu,build/%_main,$(wildcard *_main.cu))
 build/day_069_game_of_life_main: day_069_game_of_life_main.cu | build
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@ -lSDL2 -lcupti -lcuda
 
-.PHONY: run-day-069
-run-day-069: build/day_069_game_of_life_main
-	./build/day_069_game_of_life_main
+.PHONY: run-day-73
+run-day-73: build/day_073_count_array_element_main
+	./build/day_073_main
 
 build/%_main: %_main.cu | build
 	nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
@@ -22,7 +22,7 @@ build/%_main: %_main.cu | build
 build/%_test_dn: %_test.cu
 	@nvcc -DDEBUG_ENABLED=1 -g -Xcompiler "-Wall -Werror -Wextra -Wno-unused-function" -Xcudafe --display_error_number -allow-unsupported-compiler -arch=sm_86 -gencode=arch=compute_86,code=sm_86 $< -o $@  -lcupti -lcuda
 
-result.txt: build/day_072_bpe_wip_main
+result.txt: build/day_073_count_array_element_main
 	./$< > result.txt
 
 .PHONY: test
