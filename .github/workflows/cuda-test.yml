@@ -1,6 +1,6 @@
 name: CUDA Vector Add Test
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   test-cuda:
