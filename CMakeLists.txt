@@ -1,11 +1,15 @@
 cmake_minimum_required(VERSION 4.1)
 
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_C_COMPILER "/usr/bin/gcc-13")
 set(CMAKE_CXX_COMPILER "/usr/bin/g++-13")
 set(CMAKE_CUDA_HOST_COMPILER "/usr/bin/g++-13")
 set(CMAKE_CUDA_COMPILER "/opt/cuda/bin/nvcc")
 
-project(100DaysOfCuda CUDA)
+project(100DaysOfCuda CUDA CXX)
 
 set(CMAKE_CUDA_ARCHITECTURES native)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcudafe --display_error_number -allow-unsupported-compiler")
@@ -16,10 +20,42 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcudafe --display_error_number -allow
 # include(cmake/CPM.cmake)
 # CPMAddPackage("gh:NVIDIA/nvbench#main")
 
+# Include FetchContent module for downloading dependencies
+include(FetchContent)
+
+# Fetch Catch2
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG v3.5.2  # Use the latest stable version
+)
+FetchContent_MakeAvailable(Catch2)
+
+enable_testing()
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(CTest)
+include(Catch)
+
 add_executable(
   vector_add_test
   day_075_vector_add_test.cu
 )
+
+# Create test executable
+add_executable(unit_tests
+  day_076_test_vector_add.cu
+)
+
+# Link against Catch2 and your library
+target_link_libraries(unit_tests PRIVATE
+    Catch2::Catch2WithMain
+)
+
+# Discover tests for CTest
+include(Catch)
+catch_discover_tests(unit_tests)
+
+
 
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
