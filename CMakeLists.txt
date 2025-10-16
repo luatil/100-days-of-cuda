@@ -43,7 +43,9 @@ add_executable(
 
 # Create test executable
 add_executable(unit_tests
+  day_076_vector_add.cu
   day_076_test_vector_add.cu
+  day_077_property_test.cu
 )
 
 # Link against Catch2 and your library

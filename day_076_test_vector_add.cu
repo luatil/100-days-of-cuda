@@ -1,7 +1,7 @@
 #include <catch2/catch_all.hpp>
 #include "day_076_vector_add.cuh"
 
-TEST_CASE("VectorAdd kernel tests", "[cuda][vector_add]")
+TEST_CASE("VectorAdd kernel tests", "[cuda][vector_add][example]")
 {
   SECTION("Basic vector addition with N=1024")
   {
