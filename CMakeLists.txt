@@ -46,6 +46,8 @@ add_executable(unit_tests
   day_076_vector_add.cu
   day_076_test_vector_add.cu
   day_077_property_test.cu
+  day_078_logistic_regression.cu
+  day_078_logistic_regression_test.cu
 )
 
 # Link against Catch2 and your library
