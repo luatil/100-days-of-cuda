@@ -39,7 +39,8 @@ include(Catch)
 add_executable(
   subarray_sum
   day_079_subarray_sum_main.cu
-  day_079_subarray_sum.cu
+  day_079_subarray_sum_cpu_naive.cu
+  day_079_subarray_sum_gpu_v1_naive.cu
 )
 
 # Create test executable
@@ -49,7 +50,8 @@ add_executable(unit_tests
   day_077_property_test.cu
   day_078_logistic_regression.cu
   day_078_logistic_regression_test.cu
-  day_079_subarray_sum.cu
+  day_079_subarray_sum_cpu_naive.cu
+  day_079_subarray_sum_gpu_v1_naive.cu
   day_079_subarray_sum_test.cu
 )
 
@@ -62,7 +64,12 @@ target_link_libraries(unit_tests PRIVATE
 include(Catch)
 catch_discover_tests(unit_tests)
 
-
+# Benchmark executable
+add_executable(subarray_sum_benchmark
+  day_079_subarray_sum_benchmark.cu
+  day_079_subarray_sum_cpu_naive.cu
+  day_079_subarray_sum_gpu_v1_naive.cu
+)
 
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
