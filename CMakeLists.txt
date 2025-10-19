@@ -37,8 +37,9 @@ include(CTest)
 include(Catch)
 
 add_executable(
-  vector_add_test
-  day_075_vector_add_test.cu
+  subarray_sum
+  day_079_subarray_sum_main.cu
+  day_079_subarray_sum.cu
 )
 
 # Create test executable
@@ -48,6 +49,8 @@ add_executable(unit_tests
   day_077_property_test.cu
   day_078_logistic_regression.cu
   day_078_logistic_regression_test.cu
+  day_079_subarray_sum.cu
+  day_079_subarray_sum_test.cu
 )
 
 # Link against Catch2 and your library
