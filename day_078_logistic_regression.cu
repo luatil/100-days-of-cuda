@@ -82,9 +82,9 @@ __global__ void norm_squared_kernel(const float *gradient, float *partial_sums,
 
 extern "C" void solve(const float *X, const float *y, float *beta,
                       int n_samples, int n_features) {
-  const int max_iterations = 10000;
+  const int max_iterations = 100000;
   const float learning_rate = 0.01f;
-  const float tolerance = 1e-2f;
+  const float tolerance = 1e-6f;
   const float lambda = 0.0f;  // L2 regularization parameter
   const int block_size = 256;
 

@@ -44,8 +44,8 @@ TEST_CASE("Logistic Regression", "[cuda][logistic_regression]") {
     cudaFree(d_y);
     cudaFree(d_beta);
 
-    // Expected output: beta ≈ [2.26, -1.29]
-    REQUIRE(std::abs(beta[0] - 2.26f) < 0.05f);
-    REQUIRE(std::abs(beta[1] - (-1.29f)) < 0.05f);
+    // Expected output: beta ≈ [2.2562716007232666, -1.2880022525787354]
+    REQUIRE(std::abs(beta[0] - 2.2562716f) < 0.001f);
+    REQUIRE(std::abs(beta[1] - (-1.2880023f)) < 0.001f);
   }
 }
