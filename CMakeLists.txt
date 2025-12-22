@@ -53,6 +53,8 @@ add_executable(unit_tests
   day_079_subarray_sum_cpu_naive.cu
   day_079_subarray_sum_gpu_v1_naive.cu
   day_079_subarray_sum_test.cu
+  day_080_batch_norm.cu
+  day_080_batch_norm_test.cu
 )
 
 # Link against Catch2 and your library
