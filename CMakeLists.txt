@@ -73,6 +73,8 @@ add_executable(subarray_sum_benchmark
   day_079_subarray_sum_gpu_v1_naive.cu
 )
 
+add_executable(vector_add day_081_vector_sum.cu)
+
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
 # 
