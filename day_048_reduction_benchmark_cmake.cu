@@ -191,6 +191,7 @@ void ReductionBenchmark(nvbench::state &State)
     const auto N = State.get_int64("Elements");
     const auto ALGORITHM = State.get_string("Algorithm");
     const auto BLOCK_SIZE = State.get_int64("BlockSize");
+    const auto BlockSize = BLOCK_SIZE;
 
     // Allocate memory
     const size_t BYTES = N * sizeof(f32);
@@ -201,7 +202,7 @@ void ReductionBenchmark(nvbench::state &State)
 
     // Initialize data with 1.0f for easy verification
     std::vector<f32> HostInput(N, 1.0f);
-    cudaMemcpy(DeviceInput, HostInput.data(), Bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(DeviceInput, HostInput.data(), BYTES, cudaMemcpyHostToDevice);
 
     // Configure metrics for bandwidth calculation
     State.add_element_count(N, "Elements");
@@ -366,7 +367,7 @@ void ReductionBenchmark(nvbench::state &State)
 
 // NVBench configuration
 NVBENCH_BENCH(ReductionBenchmark)
-    .add_int64_power_of_two_axis("Elements", nvbench::range(10, 24, 2)) // 1K to 16M elements
+    .add_int64_power_of_two_axis("Elements", nvbench::range(20, 24, 2)) // 1K to 16M elements
     .add_string_axis("Algorithm", {"TreeReduction", "NaiveSingleBlock", "ImprovedSingleBlock",
                                    "SharedMemorySingleBlock", "MultiBlockAtomic", "CoarsenedMultiBlock"})
     .add_int64_power_of_two_axis("BlockSize", nvbench::range(7, 10, 1)) // 128 to 1024 threads

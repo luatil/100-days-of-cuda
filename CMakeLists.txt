@@ -17,8 +17,8 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcudafe --display_error_number -allow
 # Use CPM to fetch NVBench's main branch.
 # CPM: https://github.com/cpm-cmake/CPM.cmake
 # NVBench: https://github.com/NVIDIA/nvbench
-# include(cmake/CPM.cmake)
-# CPMAddPackage("gh:NVIDIA/nvbench#main")
+include(cmake/CPM.cmake)
+CPMAddPackage("gh:NVIDIA/nvbench#main")
 
 # Include FetchContent module for downloading dependencies
 include(FetchContent)
@@ -82,7 +82,13 @@ add_executable(vector_add day_081_vector_sum.cu)
 # target_link_libraries(prefix_sum_bench nvbench::main)
 
 # add_executable(reduction_bench day_048_reduction_benchmark_main.cu)
-# target_link_libraries(reduction_bench nvbench::main)
+add_executable(reduction_bench day_048_reduction_benchmark_cmake.cu)
+target_link_libraries(reduction_bench nvbench::main)
+
+add_executable(reduction_bench_v2 day_082_reduction_vs_cub.cu)
+target_link_libraries(reduction_bench_v2 nvbench::main)
+# CUB is shipped with the CUDA toolkit — no extra package needed.
+# NVCC finds its headers automatically via the CUDA include path.
 # 
 # add_executable(test_bench day_059_convolution_benchmark.cu)
 # target_link_libraries(test_bench nvbench::main)
