@@ -595,6 +595,28 @@ generated `profile.nsys-rep` file. Alternatively, pass the file directly:
 nsys-ui profile.nsys-rep
 ```
 
+Also wrote `day_083_pipelined_addition.cu` to compare a naive approach
+(two sequential HtoD transfers, then kernels on separate streams) against
+a pipelined one (N=4 streams, each owning a chunk and overlapping its
+HtoD → kernel → DtoH).
+
+Results on a 3060 with N=64M elements:
+
+```
+ncu_study (baseline):          0.581s
+pipelined_addition (4 streams): 0.523s
+```
+
+~10% speedup. The nsys timeline makes the difference visible: the baseline
+shows two wide sequential purple HtoD blocks with the GPU idle, while the
+pipelined version shows smaller interleaved transfers overlapping with
+kernel execution.
+
+The speedup is modest because Add/Sub are pure memory-bandwidth kernels
+that finish nearly instantly — there is little compute to hide the transfer
+behind. Pipelining pays off more when computation time is comparable to
+transfer time (e.g. matmul, softmax).
+
 ### Ideas
 
 Some future ideas for unix-like utils:
