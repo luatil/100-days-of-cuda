@@ -12,6 +12,7 @@ set(CMAKE_CUDA_COMPILER "/opt/cuda/bin/nvcc")
 project(100DaysOfCuda CUDA CXX)
 
 set(CMAKE_CUDA_ARCHITECTURES native)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcudafe --display_error_number -allow-unsupported-compiler")
 
 # Use CPM to fetch NVBench's main branch.
@@ -32,6 +33,17 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 enable_testing()
+
+# Expand --options-file references in compile_commands.json so clangd can read them.
+# Run: cmake --build build --target clangd
+find_program(PYTHON3 python3)
+if(PYTHON3 AND CMAKE_EXPORT_COMPILE_COMMANDS)
+  add_custom_target(clangd
+    COMMAND ${PYTHON3} ${CMAKE_SOURCE_DIR}/expand_compile_commands.py
+            ${CMAKE_BINARY_DIR}/compile_commands.json
+    COMMENT "Expanding RSP files in compile_commands.json for clangd"
+  )
+endif()
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
 include(Catch)
@@ -75,6 +87,8 @@ add_executable(subarray_sum_benchmark
 
 add_executable(vector_add day_081_vector_sum.cu)
 
+add_executable(ncu_study day_083_ncu_study.cu)
+
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
 # 
@@ -93,7 +107,7 @@ target_link_libraries(reduction_bench_v2 nvbench::main)
 # add_executable(test_bench day_059_convolution_benchmark.cu)
 # target_link_libraries(test_bench nvbench::main)
 # 
-# add_executable(rsort day_045_radix_sort_finally_main.cu)
+add_executable(rsort day_045_radix_sort_finally_main.cu)
 # 
 # # this needs to come after add_executable
 # target_compile_options(rsort PRIVATE

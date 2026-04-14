@@ -1,20 +1,20 @@
 CompileFlags:
+  Compiler: clang++
   Add:
-    - -I/usr/local/cuda/include
-    - -I/usr/local/cuda/extras/CUPTI/include
-    - -Ibuild/_deps/nvbench-src
-    - -Ibuild/_deps/nvbench-src/nvbench
-    - -L/usr/local/cuda/lib64
-    - -L/usr/local/cuda/extras/CUPTI/lib64
-    - -lcuda
-    - -lcudart
-    - -lcupti
-    - -lcurand
-    - -std=c++11
-    - --cuda-gpu-arch=sm_86 # Adjust for your GPU architecture
-    - --cuda-path=/usr/local/cuda
+    - -std=c++17
+    - -x
+    - cuda
   Remove:
-    - -W*  # Remove some warnings that might be noisy
+    - -forward-unknown-to-host-compiler
+    - --options-file*
+    - -Xcudafe*
+    - --display_error_number
+    - -allow-unsupported-compiler
+    - -ccbin=*
+    - -arch=*
+    - -Xcompiler*
+    - -std=*
+    - -W*
 
 Index:
   Background: Build
@@ -30,5 +30,3 @@ Diagnostics:
     Add: []
     Remove: [readability-braces-around-statements]
 
-Format:
-  SortIncludes: Never
