@@ -595,6 +595,27 @@ generated `profile.nsys-rep` file. Alternatively, pass the file directly:
 nsys-ui profile.nsys-rep
 ```
 
+Also wrote `day_083_bandwidth_test.cu` to measure actual PCIe bandwidth.
+Used CUDA events for timing (no warmup, 100 repetitions) and reported
+Max, Min, Avg across pageable and pinned memory in both directions.
+
+Results on a Gigabyte A520M S2H (PCIe Gen 3 x16) with a RTX 3060:
+
+```
+Dir  Type                    Max GB/s    Min GB/s    Avg GB/s
+----------------------------------------------------------------------
+HtoD (pageable)            Max   9.41  Min   9.25  Avg   9.37  GB/s
+DtoH (pageable)            Max   9.20  Min   9.02  Avg   9.15  GB/s
+----------------------------------------------------------------------
+HtoD (pinned)              Max  13.41  Min  13.36  Avg  13.41  GB/s
+DtoH (pinned)              Max  13.18  Min  13.17  Avg  13.18  GB/s
+```
+
+Pinned memory is ~43% faster than pageable because pageable memory
+requires the driver to stage through a pinned bounce buffer first.
+Pinned at 13.4 GB/s is essentially the PCIe Gen 3 x16 ceiling (~16 GB/s
+theoretical minus ~20% protocol overhead). Both directions are symmetric.
+
 Also wrote `day_083_pipelined_addition.cu` to compare a naive approach
 (two sequential HtoD transfers, then kernels on separate streams) against
 a pipelined one (N=4 streams, each owning a chunk and overlapping its
@@ -674,6 +695,29 @@ Would very much like to have a static binary that could easily be copied
 between systems that have or don't have GPUS.
 
 This could double down as a sort of learning path for SIMD on the CPU.
+
+### Glossary
+
+**PCIe (Peripheral Component Interconnect Express)** — the standard bus
+used to connect expansion cards (GPU, NVMe SSDs, network cards) to the CPU.
+Key terms:
+
+- **Lane (x1, x4, x8, x16)** — each lane is a TX/RX pair of wires. More
+  lanes = more bandwidth. GPUs use x16.
+- **Generation (Gen 3, Gen 4, Gen 5)** — bandwidth per lane doubles each
+  generation. Gen 3 x16 ≈ 16 GB/s, Gen 4 x16 ≈ 32 GB/s.
+
+**PCIe bandwidth** — the physical bus limit. Describes the hardware ceiling.
+
+**Host-device memory bandwidth** — what CUDA code experiences when calling
+`cudaMemcpy`. When transferring between RAM and VRAM, the data travels over
+PCIe, so this is the same bottleneck seen from the software side. They
+diverge only if something else in the path (e.g. slow RAM) is the limiting
+factor before PCIe is saturated.
+
+Not to be confused with **GPU memory bandwidth** — how fast the GPU reads
+and writes its own VRAM internally (GDDR6 on a 3060 is ~360 GB/s, ~27x
+faster than PCIe Gen 3 x16).
 
 ### Tools:
 

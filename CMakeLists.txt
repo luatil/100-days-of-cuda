@@ -89,6 +89,7 @@ add_executable(vector_add day_081_vector_sum.cu)
 
 add_executable(ncu_study day_083_ncu_study.cu)
 add_executable(pipelined_addition day_083_pipelined_addition.cu)
+add_executable(bandwidth_test day_083_bandwidth_test.cu)
 
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
