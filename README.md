@@ -559,6 +559,27 @@ For more details:
 nvdisasm -g -c your_file.cubin > your_file.sass
 ```
 
+#### Day 83
+
+Goal today is to learn more how `ncu` and `ncu-ui` work.
+
+After some painful installation and configuration procedure, i got the
+following to work.
+
+In my working system the name of the package was nsight-compute.
+
+```
+sudo ncu -o profile --call-stack  --nvtx ./ncu_study
+```
+
+This command saves a profile.* file that you can open with
+
+```
+ncu-ui profile.<file>
+```
+
+This presents a very complex interface with a lot of kernel information.
+
 ### Ideas
 
 Some future ideas for unix-like utils:
