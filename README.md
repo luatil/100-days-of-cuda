@@ -580,6 +580,21 @@ ncu-ui profile.<file>
 
 This presents a very complex interface with a lot of kernel information.
 
+Alright, now I am also going to learn a bit on `nsys` and `nsys-ui`
+
+For `nsys`, the workflow is similar. First generate a report:
+
+```
+nsys profile -o profile ./ncu_study
+```
+
+Then open the report in `nsys-ui` via `File → Open` and select the
+generated `profile.nsys-rep` file. Alternatively, pass the file directly:
+
+```
+nsys-ui profile.nsys-rep
+```
+
 ### Ideas
 
 Some future ideas for unix-like utils:
