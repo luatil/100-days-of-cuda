@@ -1,0 +1,67 @@
+// day_084_kernel.ptx - hand-written PTX vector addition kernel
+//
+// Implements: c[i] = a[i] + b[i]  (float32)
+//
+
+.version 9.2
+.target sm_86
+.address_size 64
+
+.visible .entry vector_add(
+    .param .u64 param_a,   // float *a  (input)
+    .param .u64 param_b,   // float *b  (input)
+    .param .u64 param_c,   // float *c  (output)
+    .param .u32 param_n    // int n
+)
+{
+    .reg .pred  %p;
+
+    .reg .f32   %fa, %fb, %fc;
+
+    // User-defined u32 regs - avoid names that shadow special registers
+    // (%tid, %ctaid, %ntid are special; use %r_* prefix here)
+    .reg .u32   %r_tid;     // threadIdx.x
+    .reg .u32   %r_bid;     // blockIdx.x
+    .reg .u32   %r_bdim;    // blockDim.x
+    .reg .u32   %r_i;       // global thread index
+    .reg .u32   %r_n;       // element count
+
+    .reg .u64   %a, %b, %c;    // base pointers
+    .reg .u64   %off;           // byte offset = i * 4
+    .reg .u64   %addr;          // scratch address register
+
+    // ---- load kernel parameters ----
+    ld.param.u64 %a, [param_a];
+    ld.param.u64 %b, [param_b];
+    ld.param.u64 %c, [param_c];
+    ld.param.u32 %r_n, [param_n];
+
+    // ---- compute global index: i = blockIdx.x * blockDim.x + threadIdx.x ----
+    mov.u32 %r_tid,  %tid.x;
+    mov.u32 %r_bid,  %ctaid.x;
+    mov.u32 %r_bdim, %ntid.x;
+    mad.lo.u32 %r_i, %r_bid, %r_bdim, %r_tid;
+
+    // ---- bounds check: if (i >= n) return ----
+    setp.ge.u32 %p, %r_i, %r_n;
+    @%p ret;
+
+    // ---- byte offset = i * sizeof(float) = i * 4 ----
+    mul.wide.u32 %off, %r_i, 4;
+
+    // ---- load a[i] ----
+    add.u64       %addr, %a, %off;
+    ld.global.f32 %fa, [%addr];
+
+    // ---- load b[i] ----
+    add.u64       %addr, %b, %off;
+    ld.global.f32 %fb, [%addr];
+
+    // ---- c[i] = a[i] + b[i] ----
+    add.f32       %fc, %fa, %fb;
+    // add.f32       %fc, %fc, 0F3F800000;  // + 1.0f  (IEEE 754 hex literal)
+    add.u64       %addr, %c, %off;
+    st.global.f32 [%addr], %fc;
+
+    ret;
+}

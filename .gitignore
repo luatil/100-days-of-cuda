@@ -1,7 +1,7 @@
 *.i
 *.ii
 *.gpu
-*.ptx
+# *.ptx
 *.cubin
 *.fatbin
 build/

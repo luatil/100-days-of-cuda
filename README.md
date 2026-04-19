@@ -638,6 +638,93 @@ that finish nearly instantly — there is little compute to hide the transfer
 behind. Pipelining pays off more when computation time is comparable to
 transfer time (e.g. matmul, softmax).
 
+#### Day 84
+
+Wrote a vector addition kernel directly in PTX, then loaded and ran it
+using the CUDA driver API.
+
+The split is:
+
+- `day_084_kernel.ptx` — hand-written PTX implementing `c[i] = a[i] + b[i]`
+- `day_084_host.cu` — driver API host that loads the PTX at runtime via `cuModuleLoad`
+
+The driver JIT-compiles the PTX for the current device on `cuModuleLoad`, so
+no SM-specific binary is baked in. The launch uses `cuLaunchKernel` with
+explicit grid/block dims and a `void *args[]` array of pointers to the kernel
+parameters.
+
+A few PTX gotchas discovered the hard way:
+
+- **PTX is ASCII-only** — em-dashes in comments (`—`) silently break the JIT
+  assembler with "unexpected non-ASCII character".
+- **Special registers are reserved names** — `%tid`, `%ctaid`, `%ntid` are
+  structs, not user registers. Naming a register `%tid` shadows the special
+  register and ptxas rejects it; prefix user regs to avoid the collision.
+- **`mul.wide.u32`** — the cleanest way to compute a byte offset from a u32
+  index: result type is twice the source width (u32 → u64), no explicit `cvt`
+  needed.
+
+`cuCtxCreate` in CUDA 13 expanded to `cuCtxCreate_v4`, which requires a
+`CUctxCreateParams *` as its second argument; pass `NULL` for defaults.
+
+For error reporting there are two layers:
+
+- **Build-time**: `ptxas` runs as a CMake dependency of the host executable.
+  A bad PTX blocks the build and prints the exact line number. This is the
+  primary feedback loop when editing the PTX file.
+- **Runtime**: `cuModuleLoad` replaced with `cuModuleLoadDataEx` passing a
+  `CU_JIT_ERROR_LOG_BUFFER`. Without this, JIT failures return a generic
+  "PTX JIT compilation failed" with no details.
+
+Float immediates in PTX use IEEE 754 hex with the `0F` prefix —
+`0F3F800000` is `1.0f`. C-style `1.0f` is a syntax error.
+
+`ptxas` can also be run directly from the CLI to validate a PTX file or
+inspect register/memory usage:
+
+```bash
+# Validate and assemble to cubin
+ptxas --gpu-name sm_86 kernel.ptx -o kernel.cubin
+
+# Print register count, shared memory, stack usage per kernel
+ptxas --gpu-name sm_86 --verbose kernel.ptx -o kernel.cubin
+
+# Disassemble the cubin back to SASS (actual machine instructions)
+nvdisasm kernel.cubin
+```
+
+The `--verbose` output looks like:
+
+```
+ptxas info    : 0 bytes gmem
+ptxas info    : Compiling entry function 'vector_add' for 'sm_86'
+ptxas info    : Function properties for vector_add
+    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+ptxas info    : Used 12 registers, used 0 barriers, 380 bytes cmem[0]
+```
+
+Register count directly affects occupancy — fewer registers per thread means
+more warps can be scheduled simultaneously on an SM.
+
+Compile a simple CUDA file to ptx using this command:
+
+```
+nvcc --ptx --gpu-architecture sm_86 --output-file day_084_nvcc_vector_add.ptx day_084_vector_add.cu
+```
+
+Where `day_084_vector_add.cu` is this:
+
+```cuda
+__global__ void VectorAdd(float *A, float *B, float *C, int N)
+{
+    int Tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (Tid < N)
+    {
+      C[Tid] = A[Tid] + B[Tid];
+    }
+}
+```
+
 ### Ideas
 
 Some future ideas for unix-like utils:

@@ -93,7 +93,7 @@ add_executable(bandwidth_test day_083_bandwidth_test.cu)
 
 # add_executable(vector_add_bench day_046_nvbench_vector_add.cu)
 # target_link_libraries(vector_add_bench nvbench::main)
-# 
+#
 # add_executable(prefix_sum_bench day_047_prefix_sum_bench_main.cu)
 # target_link_libraries(prefix_sum_bench nvbench::main)
 
@@ -105,17 +105,48 @@ add_executable(reduction_bench_v2 day_082_reduction_vs_cub.cu)
 target_link_libraries(reduction_bench_v2 nvbench::main)
 # CUB is shipped with the CUDA toolkit — no extra package needed.
 # NVCC finds its headers automatically via the CUDA include path.
-# 
+#
 # add_executable(test_bench day_059_convolution_benchmark.cu)
 # target_link_libraries(test_bench nvbench::main)
-# 
+#
 add_executable(rsort day_045_radix_sort_finally_main.cu)
-# 
+# add_executable(add day_084_vector_add.cu)
+
+# day_084 driver-API build: host loads hand-written PTX at runtime via cuModuleLoad.
+# The PTX is JIT-compiled by the driver for the current device on first load.
+add_executable(add_driver day_084_host.cu)
+target_link_libraries(add_driver PRIVATE cuda)  # driver library, not cudart
+
+# Run ptxas at build time so PTX errors surface immediately, not at runtime.
+add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/day_084_kernel.cubin
+    COMMAND /opt/cuda/bin/ptxas
+            --gpu-name sm_86
+            ${CMAKE_SOURCE_DIR}/day_084_kernel.ptx
+            -o ${CMAKE_BINARY_DIR}/day_084_kernel.cubin
+    DEPENDS ${CMAKE_SOURCE_DIR}/day_084_kernel.ptx
+    COMMENT "ptxas: validating day_084_kernel.ptx"
+    VERBATIM
+)
+add_custom_target(day084_ptxas DEPENDS ${CMAKE_BINARY_DIR}/day_084_kernel.cubin)
+add_dependencies(add_driver day084_ptxas)
+
+# Copy PTX next to the executable so cuModuleLoad("day_084_kernel.ptx") resolves
+# when the binary is run from the build directory.
+add_custom_command(
+    TARGET add_driver POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/day_084_kernel.ptx
+            $<TARGET_FILE_DIR:add_driver>/day_084_kernel.ptx
+    COMMENT "Copying day_084_kernel.ptx to build output directory"
+    VERBATIM
+)
+#
 # # this needs to come after add_executable
 # target_compile_options(rsort PRIVATE
 #     $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Werror,-Wextra,-Wno-unused-function>
 # )
-# 
+#
 # add_executable(example day_049_something_main.cu)
 # target_compile_options(example PRIVATE
 #     $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Werror,-Wextra,-Wno-unused-function>
