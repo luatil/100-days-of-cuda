@@ -4,7 +4,7 @@
 __global__ void Add(float *A, float *B, float *C, int N)
 {
     int Tid = blockDim.x * blockIdx.x + threadIdx.x;
-    if (Tid)
+    if (Tid < N)
     {
         C[Tid] = A[Tid] + B[Tid];
     }
@@ -13,7 +13,7 @@ __global__ void Add(float *A, float *B, float *C, int N)
 __global__ void Set(float *V, float X, int N)
 {
     int Tid = blockDim.x * blockIdx.x + threadIdx.x;
-    if (Tid)
+    if (Tid < N)
     {
         V[Tid] = X;
     }
@@ -21,14 +21,15 @@ __global__ void Set(float *V, float X, int N)
 
 __global__ void MaxDifference(float *A, float *B, float *MaxDiff, int N)
 {
-    // NOTE(luatil): Dumb implementation here
-    float Res = -1.0f;
-    for (int I = 0; I < N; I++)
+    int Tid = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (Tid < N)
     {
-        float Diff = abs(A[I] - B[I]);
-        Res = max(Diff, Res);
+        float Diff = abs(A[Tid] - B[Tid]);
+        int DiffAsInt = __float_as_int(Diff);
+        int *MaxDiffAsInt = (int *)MaxDiff;
+        atomicMax(MaxDiffAsInt, DiffAsInt);
     }
-    *MaxDiff = Res;
 }
 
 int main(int argc, char *argv[])
@@ -49,10 +50,10 @@ int main(int argc, char *argv[])
     const int ThreadsPerBlock = 256;
     const int NumOfBlocks = (N + ThreadsPerBlock - 1) / ThreadsPerBlock;
     Set<<<NumOfBlocks, ThreadsPerBlock>>>(A, 1.0f, N);
-    Set<<<NumOfBlocks, ThreadsPerBlock>>>(B, 3.0f, N);
+    Set<<<NumOfBlocks, ThreadsPerBlock>>>(B, 5.0f, N);
     Set<<<NumOfBlocks, ThreadsPerBlock>>>(Exp, 4.0f, N);
     Add<<<NumOfBlocks, ThreadsPerBlock>>>(A, B, C, N);
-    MaxDifference<<<1, 1>>>(C, Exp, MaxDiff, N);
+    MaxDifference<<<NumOfBlocks, ThreadsPerBlock>>>(C, Exp, MaxDiff, N);
 
     float HostResult = 10.0f;
     cudaMemcpy(&HostResult, MaxDiff, sizeof(float) * 1, cudaMemcpyDeviceToHost);
