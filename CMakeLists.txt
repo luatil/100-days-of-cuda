@@ -141,6 +141,8 @@ add_custom_command(
     COMMENT "Copying day_084_kernel.ptx to build output directory"
     VERBATIM
 )
+
+add_executable(day_085 day_085_something.cu)
 #
 # # this needs to come after add_executable
 # target_compile_options(rsort PRIVATE
